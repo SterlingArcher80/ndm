@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { FolderOpen, FileText, Upload, MoreVertical, Eye, Edit, Copy, Trash2, Move, AlertCircle } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { FolderOpen, FileText, Upload, MoreVertical, Eye, Edit, Copy, Trash2, Move, AlertCircle, Search, X, RefreshCw } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
 
 interface WorkOrderFile {
   id: string;
@@ -13,6 +15,7 @@ interface WorkOrderFile {
   size?: string;
   modifiedDate: string;
   status?: string;
+  fileType?: 'word' | 'excel' | 'pdf' | 'other';
 }
 
 interface WorkOrderFolder {
@@ -23,11 +26,28 @@ interface WorkOrderFolder {
   files: WorkOrderFile[];
 }
 
+// MSAL configuration - You'll need to set your actual client and tenant IDs
+const msalConfig = {
+  auth: {
+    clientId: "YOUR_CLIENT_ID", // Replace with your actual client ID
+    authority: "https://login.microsoftonline.com/YOUR_TENANT_ID", // Replace with your tenant ID
+    redirectUri: window.location.origin,
+  },
+  cache: {
+    cacheLocation: "sessionStorage",
+    storeAuthStateInCookie: false,
+  },
+};
+
+const msalInstance = new PublicClientApplication(msalConfig);
+
 const WorkOrderRepository = () => {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [isDragOverUpload, setIsDragOverUpload] = useState(false);
   const [showUploadPrompt, setShowUploadPrompt] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Sample nested folders for each workflow stage
   const workflowFolders = {
@@ -72,6 +92,89 @@ const WorkOrderRepository = () => {
     { id: '6', name: 'Dropship', count: workflowFolders['6']?.length || 0, color: 'bg-pink-600', files: workflowFolders['6'] || [] },
     { id: '7', name: 'Customer History', count: workflowFolders['7']?.length || 0, color: 'bg-gray-600', files: workflowFolders['7'] || [] },
   ];
+
+  // Filter folders based on search query
+  const filteredFolders = useMemo(() => {
+    if (!searchQuery.trim()) return folders;
+    
+    return folders.map(folder => ({
+      ...folder,
+      files: folder.files.filter(file => 
+        file.type === 'folder' && 
+        file.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ),
+      count: folder.files.filter(file => 
+        file.type === 'folder' && 
+        file.name.toLowerCase().includes(searchQuery.toLowerCase())
+      ).length
+    }));
+  }, [folders, searchQuery]);
+
+  // Office 365 authentication
+  const authenticateWithMicrosoft = async () => {
+    try {
+      setIsAuthenticating(true);
+      const loginRequest = {
+        scopes: ["Files.ReadWrite", "Sites.ReadWrite.All"],
+      };
+
+      const response = await msalInstance.loginPopup(loginRequest);
+      console.log("Authentication successful:", response);
+      return response.accessToken;
+    } catch (error) {
+      console.error("Authentication failed:", error);
+      throw error;
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  // Edit file in Office 365
+  const editInOffice365 = async (file: WorkOrderFile) => {
+    try {
+      const accessToken = await authenticateWithMicrosoft();
+      
+      // Here you would implement the logic to:
+      // 1. Upload the file to OneDrive
+      // 2. Open it in Office 365 online editor
+      // This requires Microsoft Graph API calls
+      
+      console.log(`Opening ${file.name} in Office 365 with token:`, accessToken);
+      
+      // For now, we'll just open Office 365 online
+      window.open('https://office.com', '_blank');
+    } catch (error) {
+      console.error("Failed to open in Office 365:", error);
+    }
+  };
+
+  // Sync back from OneDrive
+  const syncBackFromOneDrive = async (file: WorkOrderFile) => {
+    try {
+      const accessToken = await authenticateWithMicrosoft();
+      
+      // Here you would implement the logic to:
+      // 1. Download the updated file from OneDrive
+      // 2. Replace the local version
+      // 3. Delete the file from OneDrive
+      
+      console.log(`Syncing back ${file.name} from OneDrive`);
+      
+      // Placeholder for actual implementation
+      alert(`${file.name} has been synced back from OneDrive`);
+    } catch (error) {
+      console.error("Failed to sync back from OneDrive:", error);
+    }
+  };
+
+  // Determine file type for context menu options
+  const getFileType = (fileName: string): 'word' | 'excel' | 'pdf' | 'other' => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    if (['doc', 'docx'].includes(extension || '')) return 'word';
+    if (['xls', 'xlsx'].includes(extension || '')) return 'excel';
+    if (extension === 'pdf') return 'pdf';
+    return 'other';
+  };
 
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     setDraggedItem(itemId);
@@ -131,37 +234,58 @@ const WorkOrderRepository = () => {
     }
   };
 
-  const FileContextMenu = ({ file }: { file: WorkOrderFile }) => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-48 bg-gray-800 border-gray-700">
-        <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
-          <Eye className="mr-2 h-4 w-4" />
-          Preview
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
-          <Edit className="mr-2 h-4 w-4" />
-          Edit in Office 365
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
-          <Copy className="mr-2 h-4 w-4" />
-          Rename
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
-          <Move className="mr-2 h-4 w-4" />
-          Move to...
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-red-400 hover:bg-gray-700">
-          <Trash2 className="mr-2 h-4 w-4" />
-          Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  const FileContextMenu = ({ file }: { file: WorkOrderFile }) => {
+    const fileType = getFileType(file.name);
+    const canEditInOffice = fileType === 'word' || fileType === 'excel';
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48 bg-gray-800 border-gray-700">
+          <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
+            <Eye className="mr-2 h-4 w-4" />
+            Preview
+          </DropdownMenuItem>
+          {canEditInOffice && (
+            <DropdownMenuItem 
+              className="text-gray-300 hover:bg-gray-700"
+              onClick={() => editInOffice365(file)}
+              disabled={isAuthenticating}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              {isAuthenticating ? 'Authenticating...' : 'Edit in Office 365'}
+            </DropdownMenuItem>
+          )}
+          {canEditInOffice && (
+            <DropdownMenuItem 
+              className="text-gray-300 hover:bg-gray-700"
+              onClick={() => syncBackFromOneDrive(file)}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Syncback
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
+            <Copy className="mr-2 h-4 w-4" />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
+            <Move className="mr-2 h-4 w-4" />
+            Move to...
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-red-400 hover:bg-gray-700">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -172,6 +296,31 @@ const WorkOrderRepository = () => {
             <h1 className="text-2xl font-bold text-white">Work Order Repository</h1>
             <p className="text-gray-400 mt-1">Manage customer work orders from open to delivery</p>
           </div>
+          
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md mx-8">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search folders..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10 bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 text-gray-400 hover:text-white"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
           <div className="flex gap-3">
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Upload className="mr-2 h-4 w-4" />
@@ -191,7 +340,7 @@ const WorkOrderRepository = () => {
           <div className="p-4 flex-1 overflow-y-auto">
             <h2 className="text-lg font-semibold mb-4 text-gray-300">Workflow Stages</h2>
             <div className="space-y-2">
-              {folders.map((folder) => (
+              {filteredFolders.map((folder) => (
                 <div
                   key={folder.id}
                   className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
@@ -275,7 +424,8 @@ const WorkOrderRepository = () => {
                     {folders.find(f => f.id === selectedFolder)?.name}
                   </h2>
                   <p className="text-gray-400 mt-1">
-                    {folders.find(f => f.id === selectedFolder)?.count} folders
+                    {filteredFolders.find(f => f.id === selectedFolder)?.count} folders
+                    {searchQuery && ` (filtered by "${searchQuery}")`}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -290,7 +440,7 @@ const WorkOrderRepository = () => {
 
               {/* File Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {folders.find(f => f.id === selectedFolder)?.files.map((file) => (
+                {filteredFolders.find(f => f.id === selectedFolder)?.files.map((file) => (
                   <Card
                     key={file.id}
                     className="bg-gray-800 border-gray-700 hover:bg-gray-750 transition-all duration-200 cursor-pointer"
@@ -320,17 +470,24 @@ const WorkOrderRepository = () => {
               </div>
 
               {/* Empty State */}
-              {(!folders.find(f => f.id === selectedFolder)?.files || folders.find(f => f.id === selectedFolder)?.files.length === 0) && (
+              {(!filteredFolders.find(f => f.id === selectedFolder)?.files || filteredFolders.find(f => f.id === selectedFolder)?.files.length === 0) && (
                 <div className="text-center py-12">
                   <FolderOpen className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-400 mb-2">No folders yet</h3>
+                  <h3 className="text-lg font-medium text-gray-400 mb-2">
+                    {searchQuery ? 'No folders match your search' : 'No folders yet'}
+                  </h3>
                   <p className="text-gray-500 mb-4">
-                    Upload folders or drag them here to get started
+                    {searchQuery 
+                      ? `Try adjusting your search term "${searchQuery}"`
+                      : 'Upload folders or drag them here to get started'
+                    }
                   </p>
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Files
-                  </Button>
+                  {!searchQuery && (
+                    <Button className="bg-blue-600 hover:bg-blue-700">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload Files
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

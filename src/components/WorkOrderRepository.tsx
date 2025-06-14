@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { toast } from '@/components/ui/sonner';
 
 interface WorkOrderFile {
   id: string;
@@ -59,7 +60,7 @@ const WorkOrderRepository = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   // Sample nested folders for each workflow stage with sub-folders and files
-  const workflowFolders = {
+  const [workflowFolders, setWorkflowFolders] = useState({
     '1': [
       { 
         id: 'f1', 
@@ -119,7 +120,7 @@ const WorkOrderRepository = () => {
       { id: 'f15', name: 'Customer NOP - Archive', type: 'folder' as const, modifiedDate: '2024-05-27' },
       { id: 'f16', name: 'Customer QRS - Old Jobs', type: 'folder' as const, modifiedDate: '2024-05-26' },
     ],
-  };
+  });
 
   const folders: WorkOrderFolder[] = [
     { id: '1', name: 'Open', count: workflowFolders['1']?.length || 0, color: 'bg-blue-600', files: workflowFolders['1'] || [] },
@@ -331,6 +332,37 @@ const WorkOrderRepository = () => {
     }
   };
 
+  const deleteFolderFromPath = (folderId: string, workflowStageId: string, path: string[]) => {
+    const updatedWorkflowFolders = { ...workflowFolders };
+    
+    if (path.length === 0) {
+      // Delete from root level of workflow stage
+      updatedWorkflowFolders[workflowStageId] = updatedWorkflowFolders[workflowStageId].filter(
+        item => item.id !== folderId
+      );
+    } else {
+      // Navigate to the correct nested location and delete
+      let currentItems = updatedWorkflowFolders[workflowStageId];
+      
+      // Navigate to parent folder
+      for (let i = 0; i < path.length - 1; i++) {
+        const folderItem = currentItems.find(item => item.id === path[i] && item.type === 'folder') as WorkOrderFile;
+        if (folderItem && folderItem.subItems) {
+          currentItems = folderItem.subItems as WorkOrderFile[];
+        }
+      }
+      
+      // Find the parent folder and remove the item from its subItems
+      const parentFolderId = path[path.length - 1];
+      const parentFolder = currentItems.find(item => item.id === parentFolderId && item.type === 'folder') as WorkOrderFile;
+      if (parentFolder && parentFolder.subItems) {
+        parentFolder.subItems = parentFolder.subItems.filter(item => item.id !== folderId);
+      }
+    }
+    
+    setWorkflowFolders(updatedWorkflowFolders);
+  };
+
   const handleDeleteFolder = (folderId: string, folderName: string) => {
     setDeleteDialog({
       open: true,
@@ -341,9 +373,16 @@ const WorkOrderRepository = () => {
   };
 
   const confirmDelete = () => {
-    if (deleteConfirmation === 'DELETE') {
+    if (deleteConfirmation === 'DELETE' && selectedFolder) {
       console.log(`Deleting folder: ${deleteDialog.itemId}`);
-      // Here you would implement the actual delete logic
+      
+      // Delete the folder from the data structure
+      deleteFolderFromPath(deleteDialog.itemId, selectedFolder, currentPath);
+      
+      // Show success toast
+      toast.success(`Folder "${deleteDialog.itemName}" has been deleted successfully.`);
+      
+      // Close dialog and reset form
       setDeleteDialog({ open: false, itemName: '', itemId: '' });
       setDeleteConfirmation('');
     }

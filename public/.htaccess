@@ -1,0 +1,9 @@
+
+RewriteEngine On
+RewriteBase /ndm/
+
+# Handle Angular and React requests
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /ndm/index.html [L]

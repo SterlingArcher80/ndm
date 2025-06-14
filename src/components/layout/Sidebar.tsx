@@ -1,6 +1,7 @@
 
 import { Package, Home, BarChart3, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { Link } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -18,7 +19,7 @@ import { Button } from '@/components/ui/button';
 const menuItems = [
   {
     title: "Dashboard",
-    url: "/inventory",
+    url: "/",
     icon: Home,
   },
   {
@@ -58,10 +59,10 @@ const AppSidebar = () => {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

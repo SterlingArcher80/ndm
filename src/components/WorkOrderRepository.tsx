@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { FolderOpen, FileText, Upload, MoreVertical, Eye, Edit, Copy, Trash2, Move, AlertCircle, Search, X, RefreshCw } from 'lucide-react';
+import { FolderOpen, FileText, Upload, MoreVertical, Eye, Edit, Copy, Trash2, Move, AlertCircle, Search, X, RefreshCw, ArrowLeft } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ interface WorkOrderFile {
   modifiedDate: string;
   status?: string;
   fileType?: 'word' | 'excel' | 'pdf' | 'other';
+  subItems?: (WorkOrderFile | WorkOrderFolder)[];
 }
 
 interface WorkOrderFolder {
@@ -43,20 +44,50 @@ const msalInstance = new PublicClientApplication(msalConfig);
 
 const WorkOrderRepository = () => {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [isDragOverUpload, setIsDragOverUpload] = useState(false);
   const [showUploadPrompt, setShowUploadPrompt] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  // Sample nested folders for each workflow stage
+  // Sample nested folders for each workflow stage with sub-folders and files
   const workflowFolders = {
     '1': [
-      { id: 'f1', name: 'Customer ABC - Project 001', type: 'folder' as const, modifiedDate: '2024-06-10' },
-      { id: 'f2', name: 'Customer XYZ - Repair Job', type: 'folder' as const, modifiedDate: '2024-06-09' },
+      { 
+        id: 'f1', 
+        name: 'Customer ABC - Project 001', 
+        type: 'folder' as const, 
+        modifiedDate: '2024-06-10',
+        subItems: [
+          { id: 'f1-1', name: 'Drawings', type: 'folder' as const, modifiedDate: '2024-06-10' },
+          { id: 'f1-2', name: 'Specifications', type: 'folder' as const, modifiedDate: '2024-06-09' },
+          { id: 'f1-3', name: 'Work Order.docx', type: 'file' as const, size: '2.3 MB', modifiedDate: '2024-06-10' },
+          { id: 'f1-4', name: 'Quote.xlsx', type: 'file' as const, size: '1.1 MB', modifiedDate: '2024-06-09' }
+        ]
+      },
+      { 
+        id: 'f2', 
+        name: 'Customer XYZ - Repair Job', 
+        type: 'folder' as const, 
+        modifiedDate: '2024-06-09',
+        subItems: [
+          { id: 'f2-1', name: 'Photos', type: 'folder' as const, modifiedDate: '2024-06-09' },
+          { id: 'f2-2', name: 'Repair Instructions.pdf', type: 'file' as const, size: '890 KB', modifiedDate: '2024-06-09' }
+        ]
+      },
     ],
     '2': [
-      { id: 'f3', name: 'Completed Job - Customer DEF', type: 'folder' as const, modifiedDate: '2024-06-08' },
+      { 
+        id: 'f3', 
+        name: 'Completed Job - Customer DEF', 
+        type: 'folder' as const, 
+        modifiedDate: '2024-06-08',
+        subItems: [
+          { id: 'f3-1', name: 'Final Report.docx', type: 'file' as const, size: '3.2 MB', modifiedDate: '2024-06-08' },
+          { id: 'f3-2', name: 'Time Tracking.xlsx', type: 'file' as const, size: '856 KB', modifiedDate: '2024-06-08' }
+        ]
+      },
       { id: 'f4', name: 'Rush Order - Customer GHI', type: 'folder' as const, modifiedDate: '2024-06-07' },
       { id: 'f5', name: 'Standard Service - Customer JKL', type: 'folder' as const, modifiedDate: '2024-06-06' },
     ],
@@ -93,6 +124,28 @@ const WorkOrderRepository = () => {
     { id: '7', name: 'Customer History', count: workflowFolders['7']?.length || 0, color: 'bg-gray-600', files: workflowFolders['7'] || [] },
   ];
 
+  // Get current folder contents based on path
+  const getCurrentFolderContents = () => {
+    if (!selectedFolder) return [];
+    
+    const workflowFolder = folders.find(f => f.id === selectedFolder);
+    if (!workflowFolder) return [];
+
+    let currentItems = workflowFolder.files;
+    
+    // Navigate through the path to find current folder contents
+    for (const pathItem of currentPath) {
+      const folderItem = currentItems.find(item => item.id === pathItem && item.type === 'folder') as WorkOrderFile;
+      if (folderItem && folderItem.subItems) {
+        currentItems = folderItem.subItems as WorkOrderFile[];
+      } else {
+        return [];
+      }
+    }
+    
+    return currentItems;
+  };
+
   // Filter folders based on search query
   const filteredFolders = useMemo(() => {
     if (!searchQuery.trim()) return folders;
@@ -110,7 +163,47 @@ const WorkOrderRepository = () => {
     }));
   }, [folders, searchQuery]);
 
-  // Office 365 authentication
+  // Navigation functions
+  const navigateToFolder = (folderId: string) => {
+    setCurrentPath([...currentPath, folderId]);
+  };
+
+  const navigateBack = () => {
+    if (currentPath.length > 0) {
+      setCurrentPath(currentPath.slice(0, -1));
+    }
+  };
+
+  const navigateToRoot = () => {
+    setCurrentPath([]);
+  };
+
+  // Get breadcrumb path
+  const getBreadcrumbPath = () => {
+    if (!selectedFolder) return [];
+    
+    const workflowFolder = folders.find(f => f.id === selectedFolder);
+    if (!workflowFolder) return [];
+
+    const breadcrumbs = [{ name: workflowFolder.name, onClick: navigateToRoot }];
+    let currentItems = workflowFolder.files;
+    
+    for (const pathItem of currentPath) {
+      const folderItem = currentItems.find(item => item.id === pathItem && item.type === 'folder') as WorkOrderFile;
+      if (folderItem) {
+        breadcrumbs.push({ 
+          name: folderItem.name, 
+          onClick: () => setCurrentPath(currentPath.slice(0, currentPath.indexOf(pathItem) + 1))
+        });
+        if (folderItem.subItems) {
+          currentItems = folderItem.subItems as WorkOrderFile[];
+        }
+      }
+    }
+    
+    return breadcrumbs;
+  };
+
   const authenticateWithMicrosoft = async () => {
     try {
       setIsAuthenticating(true);
@@ -129,7 +222,6 @@ const WorkOrderRepository = () => {
     }
   };
 
-  // Edit file in Office 365
   const editInOffice365 = async (file: WorkOrderFile) => {
     try {
       const accessToken = await authenticateWithMicrosoft();
@@ -148,7 +240,6 @@ const WorkOrderRepository = () => {
     }
   };
 
-  // Sync back from OneDrive
   const syncBackFromOneDrive = async (file: WorkOrderFile) => {
     try {
       const accessToken = await authenticateWithMicrosoft();
@@ -167,7 +258,6 @@ const WorkOrderRepository = () => {
     }
   };
 
-  // Determine file type for context menu options
   const getFileType = (fileName: string): 'word' | 'excel' | 'pdf' | 'other' => {
     const extension = fileName.split('.').pop()?.toLowerCase();
     if (['doc', 'docx'].includes(extension || '')) return 'word';
@@ -287,6 +377,9 @@ const WorkOrderRepository = () => {
     );
   };
 
+  const currentContents = getCurrentFolderContents();
+  const breadcrumbPath = getBreadcrumbPath();
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Header */}
@@ -336,7 +429,6 @@ const WorkOrderRepository = () => {
       <div className="flex h-[calc(100vh-80px)]">
         {/* Sidebar - Folder Structure */}
         <div className="w-80 border-r border-gray-800 bg-gray-950 flex flex-col">
-          {/* Workflow Stages */}
           <div className="p-4 flex-1 overflow-y-auto">
             <h2 className="text-lg font-semibold mb-4 text-gray-300">Workflow Stages</h2>
             <div className="space-y-2">
@@ -348,7 +440,10 @@ const WorkOrderRepository = () => {
                       ? 'bg-gray-800 border-l-4 border-blue-500'
                       : 'hover:bg-gray-800'
                   }`}
-                  onClick={() => setSelectedFolder(folder.id)}
+                  onClick={() => {
+                    setSelectedFolder(folder.id);
+                    setCurrentPath([]);
+                  }}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, folder.id)}
                 >
@@ -418,13 +513,43 @@ const WorkOrderRepository = () => {
         <div className="flex-1 p-6 overflow-y-auto">
           {selectedFolder ? (
             <div>
+              {/* Breadcrumb Navigation */}
+              {breadcrumbPath.length > 0 && (
+                <div className="flex items-center gap-2 mb-4">
+                  {currentPath.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={navigateBack}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-1" />
+                      Back
+                    </Button>
+                  )}
+                  <div className="flex items-center gap-2 text-sm text-gray-400">
+                    {breadcrumbPath.map((crumb, index) => (
+                      <React.Fragment key={index}>
+                        <button
+                          onClick={crumb.onClick}
+                          className="hover:text-white transition-colors"
+                        >
+                          {crumb.name}
+                        </button>
+                        {index < breadcrumbPath.length - 1 && <span>/</span>}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-semibold text-white">
-                    {folders.find(f => f.id === selectedFolder)?.name}
+                    {breadcrumbPath.length > 0 ? breadcrumbPath[breadcrumbPath.length - 1].name : 'Select a folder'}
                   </h2>
                   <p className="text-gray-400 mt-1">
-                    {filteredFolders.find(f => f.id === selectedFolder)?.count} folders
+                    {currentContents.length} items
                     {searchQuery && ` (filtered by "${searchQuery}")`}
                   </p>
                 </div>
@@ -438,31 +563,36 @@ const WorkOrderRepository = () => {
                 </div>
               </div>
 
-              {/* File Grid */}
+              {/* File/Folder Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredFolders.find(f => f.id === selectedFolder)?.files.map((file) => (
+                {currentContents.map((item) => (
                   <Card
-                    key={file.id}
+                    key={item.id}
                     className="bg-gray-800 border-gray-700 hover:bg-gray-750 transition-all duration-200 cursor-pointer"
                     draggable
-                    onDragStart={(e) => handleDragStart(e, file.id)}
+                    onDragStart={(e) => handleDragStart(e, item.id)}
+                    onClick={() => {
+                      if (item.type === 'folder') {
+                        navigateToFolder(item.id);
+                      }
+                    }}
                   >
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center">
-                          {file.type === 'folder' ? (
+                          {item.type === 'folder' ? (
                             <FolderOpen className="h-8 w-8 text-blue-400 mr-3" />
                           ) : (
                             <FileText className="h-8 w-8 text-gray-400 mr-3" />
                           )}
                           <div>
-                            <h3 className="font-medium text-white text-sm">{file.name}</h3>
+                            <h3 className="font-medium text-white text-sm">{item.name}</h3>
                             <p className="text-xs text-gray-400 mt-1">
-                              {file.size && `${file.size} • `}Modified {file.modifiedDate}
+                              {item.size && `${item.size} • `}Modified {item.modifiedDate}
                             </p>
                           </div>
                         </div>
-                        <FileContextMenu file={file} />
+                        {item.type === 'file' && <FileContextMenu file={item} />}
                       </div>
                     </div>
                   </Card>
@@ -470,16 +600,16 @@ const WorkOrderRepository = () => {
               </div>
 
               {/* Empty State */}
-              {(!filteredFolders.find(f => f.id === selectedFolder)?.files || filteredFolders.find(f => f.id === selectedFolder)?.files.length === 0) && (
+              {currentContents.length === 0 && (
                 <div className="text-center py-12">
                   <FolderOpen className="h-16 w-16 text-gray-600 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-400 mb-2">
-                    {searchQuery ? 'No folders match your search' : 'No folders yet'}
+                    {searchQuery ? 'No items match your search' : 'No items in this folder'}
                   </h3>
                   <p className="text-gray-500 mb-4">
                     {searchQuery 
                       ? `Try adjusting your search term "${searchQuery}"`
-                      : 'Upload folders or drag them here to get started'
+                      : 'Upload files or create folders to get started'
                     }
                   </p>
                   {!searchQuery && (

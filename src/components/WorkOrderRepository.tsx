@@ -457,8 +457,8 @@ const WorkOrderRepository = () => {
       <div className="border-b border-gray-800 bg-gray-950 px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Work Order Repository</h1>
-            <p className="text-gray-400 mt-1">Manage customer work orders from open to delivery</p>
+            <h1 className="text-2xl font-bold text-white">Nucleus</h1>
+            <p className="text-gray-400 mt-1">DMSI Document Manager</p>
           </div>
           
           {/* Search Bar */}

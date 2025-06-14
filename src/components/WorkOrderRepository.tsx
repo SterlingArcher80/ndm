@@ -232,16 +232,8 @@ const WorkOrderRepository = () => {
 
   const editInOffice365 = async (file: WorkOrderFile) => {
     try {
-      const accessToken = await authenticateWithMicrosoft();
-      
-      // Here you would implement the logic to:
-      // 1. Upload the file to OneDrive
-      // 2. Open it in Office 365 online editor
-      // This requires Microsoft Graph API calls
-      
-      console.log(`Opening ${file.name} in Office 365 with token:`, accessToken);
-      
-      // For now, we'll just open Office 365 online
+      console.log(`Opening ${file.name} in Office 365...`);
+      // For now, just open Office 365 online
       window.open('https://office.com', '_blank');
     } catch (error) {
       console.error("Failed to open in Office 365:", error);
@@ -417,17 +409,22 @@ const WorkOrderRepository = () => {
           {canEditInOffice && (
             <DropdownMenuItem 
               className="text-gray-300 hover:bg-gray-700"
-              onClick={() => editInOffice365(file)}
-              disabled={isAuthenticating}
+              onClick={(e) => {
+                e.stopPropagation();
+                editInOffice365(file);
+              }}
             >
               <Edit className="mr-2 h-4 w-4" />
-              {isAuthenticating ? 'Authenticating...' : 'Edit in Office 365'}
+              Edit in Office 365
             </DropdownMenuItem>
           )}
           {canEditInOffice && (
             <DropdownMenuItem 
               className="text-gray-300 hover:bg-gray-700"
-              onClick={() => syncBackFromOneDrive(file)}
+              onClick={(e) => {
+                e.stopPropagation();
+                syncBackFromOneDrive(file);
+              }}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Syncback

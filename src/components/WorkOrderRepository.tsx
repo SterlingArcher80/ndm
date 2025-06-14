@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
 
 interface WorkOrderFile {
@@ -50,6 +51,12 @@ const WorkOrderRepository = () => {
   const [showUploadPrompt, setShowUploadPrompt] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; itemName: string; itemId: string }>({
+    open: false,
+    itemName: '',
+    itemId: ''
+  });
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   // Sample nested folders for each workflow stage with sub-folders and files
   const workflowFolders = {
@@ -324,6 +331,34 @@ const WorkOrderRepository = () => {
     }
   };
 
+  const handleDeleteFolder = (folderId: string, folderName: string) => {
+    setDeleteDialog({
+      open: true,
+      itemName: folderName,
+      itemId: folderId
+    });
+    setDeleteConfirmation('');
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmation === 'DELETE') {
+      console.log(`Deleting folder: ${deleteDialog.itemId}`);
+      // Here you would implement the actual delete logic
+      setDeleteDialog({ open: false, itemName: '', itemId: '' });
+      setDeleteConfirmation('');
+    }
+  };
+
+  const handleRenameFolder = (folderId: string) => {
+    console.log(`Renaming folder: ${folderId}`);
+    // Here you would implement the rename logic
+  };
+
+  const handleMoveFolder = (folderId: string) => {
+    console.log(`Moving folder: ${folderId}`);
+    // Here you would implement the move logic
+  };
+
   const FileContextMenu = ({ file }: { file: WorkOrderFile }) => {
     const fileType = getFileType(file.name);
     const canEditInOffice = fileType === 'word' || fileType === 'excel';
@@ -369,6 +404,42 @@ const WorkOrderRepository = () => {
             Move to...
           </DropdownMenuItem>
           <DropdownMenuItem className="text-red-400 hover:bg-gray-700">
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  const FolderContextMenu = ({ folder }: { folder: WorkOrderFile }) => {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48 bg-gray-800 border-gray-700">
+          <DropdownMenuItem 
+            className="text-gray-300 hover:bg-gray-700"
+            onClick={() => handleRenameFolder(folder.id)}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            className="text-gray-300 hover:bg-gray-700"
+            onClick={() => handleMoveFolder(folder.id)}
+          >
+            <Move className="mr-2 h-4 w-4" />
+            Move to...
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-gray-700" />
+          <DropdownMenuItem 
+            className="text-red-400 hover:bg-gray-700"
+            onClick={() => handleDeleteFolder(folder.id, folder.name)}
+          >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </DropdownMenuItem>
@@ -592,7 +663,11 @@ const WorkOrderRepository = () => {
                             </p>
                           </div>
                         </div>
-                        {item.type === 'file' && <FileContextMenu file={item} />}
+                        {item.type === 'file' ? (
+                          <FileContextMenu file={item} />
+                        ) : (
+                          <FolderContextMenu folder={item} />
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -632,6 +707,51 @@ const WorkOrderRepository = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+        <DialogContent className="bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Delete Folder</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Are you sure you want to delete the folder "{deleteDialog.itemName}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <p className="text-sm text-gray-300 mb-2">
+              Type <span className="font-bold text-red-400">DELETE</span> to confirm:
+            </p>
+            <Input
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              placeholder="Type DELETE to confirm"
+              className="bg-gray-700 border-gray-600 text-white"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setDeleteDialog({ open: false, itemName: '', itemId: '' });
+                setDeleteConfirmation('');
+              }}
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              disabled={deleteConfirmation !== 'DELETE'}
+              className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
+            >
+              Delete Folder
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

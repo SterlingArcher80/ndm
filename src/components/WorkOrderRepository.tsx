@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FolderOpen, FileText, Upload, MoreVertical, Eye, Edit, Copy, Trash2, Move } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -27,21 +26,48 @@ const WorkOrderRepository = () => {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
-  const folders: WorkOrderFolder[] = [
-    { id: '1', name: 'Open', count: 12, color: 'bg-blue-600', files: [] },
-    { id: '2', name: 'To be Invoiced', count: 8, color: 'bg-orange-600', files: [] },
-    { id: '3', name: 'Invoiced', count: 15, color: 'bg-green-600', files: [] },
-    { id: '4', name: 'To be Shipped', count: 6, color: 'bg-purple-600', files: [] },
-    { id: '5', name: 'Shipped', count: 23, color: 'bg-indigo-600', files: [] },
-    { id: '6', name: 'Dropship', count: 4, color: 'bg-pink-600', files: [] },
-    { id: '7', name: 'Customer History', count: 156, color: 'bg-gray-600', files: [] },
-  ];
+  // Sample nested folders for each workflow stage
+  const workflowFolders = {
+    '1': [
+      { id: 'f1', name: 'Customer ABC - Project 001', type: 'folder' as const, modifiedDate: '2024-06-10' },
+      { id: 'f2', name: 'Customer XYZ - Repair Job', type: 'folder' as const, modifiedDate: '2024-06-09' },
+    ],
+    '2': [
+      { id: 'f3', name: 'Completed Job - Customer DEF', type: 'folder' as const, modifiedDate: '2024-06-08' },
+      { id: 'f4', name: 'Rush Order - Customer GHI', type: 'folder' as const, modifiedDate: '2024-06-07' },
+      { id: 'f5', name: 'Standard Service - Customer JKL', type: 'folder' as const, modifiedDate: '2024-06-06' },
+    ],
+    '3': [
+      { id: 'f6', name: 'Invoice Sent - Customer MNO', type: 'folder' as const, modifiedDate: '2024-06-05' },
+      { id: 'f7', name: 'Payment Received - Customer PQR', type: 'folder' as const, modifiedDate: '2024-06-04' },
+    ],
+    '4': [
+      { id: 'f8', name: 'Ready to Ship - Customer STU', type: 'folder' as const, modifiedDate: '2024-06-03' },
+    ],
+    '5': [
+      { id: 'f9', name: 'Shipped - Customer VWX', type: 'folder' as const, modifiedDate: '2024-06-02' },
+      { id: 'f10', name: 'Delivered - Customer YZA', type: 'folder' as const, modifiedDate: '2024-06-01' },
+      { id: 'f11', name: 'Completed - Customer BCD', type: 'folder' as const, modifiedDate: '2024-05-31' },
+    ],
+    '6': [
+      { id: 'f12', name: 'Dropship Order - Vendor EFG', type: 'folder' as const, modifiedDate: '2024-05-30' },
+    ],
+    '7': [
+      { id: 'f13', name: 'Customer HIJ - Historical Records', type: 'folder' as const, modifiedDate: '2024-05-29' },
+      { id: 'f14', name: 'Customer KLM - Past Projects', type: 'folder' as const, modifiedDate: '2024-05-28' },
+      { id: 'f15', name: 'Customer NOP - Archive', type: 'folder' as const, modifiedDate: '2024-05-27' },
+      { id: 'f16', name: 'Customer QRS - Old Jobs', type: 'folder' as const, modifiedDate: '2024-05-26' },
+    ],
+  };
 
-  const sampleFiles: WorkOrderFile[] = [
-    { id: '1', name: 'Work Order #12345.pdf', type: 'file', size: '2.4 MB', modifiedDate: '2024-06-10' },
-    { id: '2', name: 'Customer Specs', type: 'folder', modifiedDate: '2024-06-09' },
-    { id: '3', name: 'Invoice Draft.docx', type: 'file', size: '156 KB', modifiedDate: '2024-06-08' },
-    { id: '4', name: 'Shipping Label.pdf', type: 'file', size: '89 KB', modifiedDate: '2024-06-07' },
+  const folders: WorkOrderFolder[] = [
+    { id: '1', name: 'Open', count: workflowFolders['1']?.length || 0, color: 'bg-blue-600', files: workflowFolders['1'] || [] },
+    { id: '2', name: 'To be Invoiced', count: workflowFolders['2']?.length || 0, color: 'bg-orange-600', files: workflowFolders['2'] || [] },
+    { id: '3', name: 'Invoiced', count: workflowFolders['3']?.length || 0, color: 'bg-green-600', files: workflowFolders['3'] || [] },
+    { id: '4', name: 'To be Shipped', count: workflowFolders['4']?.length || 0, color: 'bg-purple-600', files: workflowFolders['4'] || [] },
+    { id: '5', name: 'Shipped', count: workflowFolders['5']?.length || 0, color: 'bg-indigo-600', files: workflowFolders['5'] || [] },
+    { id: '6', name: 'Dropship', count: workflowFolders['6']?.length || 0, color: 'bg-pink-600', files: workflowFolders['6'] || [] },
+    { id: '7', name: 'Customer History', count: workflowFolders['7']?.length || 0, color: 'bg-gray-600', files: workflowFolders['7'] || [] },
   ];
 
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
@@ -137,7 +163,7 @@ const WorkOrderRepository = () => {
                 <FolderOpen className="h-5 w-5 text-gray-400 mr-3" />
                 <div className="flex-1">
                   <div className="font-medium text-gray-300">{folder.name}</div>
-                  <div className="text-sm text-gray-500">{folder.count} items</div>
+                  <div className="text-sm text-gray-500">{folder.count} folders</div>
                 </div>
                 <Badge variant="secondary" className="bg-gray-800 text-gray-300">
                   {folder.count}
@@ -157,7 +183,7 @@ const WorkOrderRepository = () => {
                     {folders.find(f => f.id === selectedFolder)?.name}
                   </h2>
                   <p className="text-gray-400 mt-1">
-                    {folders.find(f => f.id === selectedFolder)?.count} items
+                    {folders.find(f => f.id === selectedFolder)?.count} folders
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -172,7 +198,7 @@ const WorkOrderRepository = () => {
 
               {/* File Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                {sampleFiles.map((file) => (
+                {folders.find(f => f.id === selectedFolder)?.files.map((file) => (
                   <Card
                     key={file.id}
                     className="bg-gray-800 border-gray-700 hover:bg-gray-750 transition-all duration-200 cursor-pointer"
@@ -202,12 +228,12 @@ const WorkOrderRepository = () => {
               </div>
 
               {/* Empty State */}
-              {sampleFiles.length === 0 && (
+              {(!folders.find(f => f.id === selectedFolder)?.files || folders.find(f => f.id === selectedFolder)?.files.length === 0) && (
                 <div className="text-center py-12">
                   <FolderOpen className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-400 mb-2">No files yet</h3>
+                  <h3 className="text-lg font-medium text-gray-400 mb-2">No folders yet</h3>
                   <p className="text-gray-500 mb-4">
-                    Upload files or drag them here to get started
+                    Upload folders or drag them here to get started
                   </p>
                   <Button className="bg-blue-600 hover:bg-blue-700">
                     <Upload className="mr-2 h-4 w-4" />

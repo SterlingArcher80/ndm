@@ -1,10 +1,10 @@
 
 import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import AddItemDialog from './AddItemDialog';
 
 const InventoryDashboard = () => {
   const { data: inventoryItems, isLoading } = useQuery({
@@ -17,6 +17,7 @@ const InventoryDashboard = () => {
           categories(name),
           locations(name)
         `)
+        .order('created_at', { ascending: false })
         .limit(10);
       
       if (error) throw error;
@@ -112,42 +113,50 @@ const InventoryDashboard = () => {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-medium">Inventory Items</h3>
-              <Button>Add New Item</Button>
+              <AddItemDialog />
             </div>
             
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Quantity</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {inventoryItems?.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.sku}</TableCell>
-                    <TableCell>{item.categories?.name || 'N/A'}</TableCell>
-                    <TableCell>{item.locations?.name || 'N/A'}</TableCell>
-                    <TableCell>
-                      <span className={item.quantity < 10 ? 'text-orange-600 font-medium' : ''}>
-                        {item.quantity}
-                      </span>
-                    </TableCell>
+            {inventoryItems && inventoryItems.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Quantity</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {(!inventoryItems || inventoryItems.length === 0) && (
+                </TableHeader>
+                <TableBody>
+                  {inventoryItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>{item.sku}</TableCell>
+                      <TableCell>{item.categories?.name || 'N/A'}</TableCell>
+                      <TableCell>{item.locations?.name || 'N/A'}</TableCell>
+                      <TableCell>
+                        <span className={item.quantity < 10 ? 'text-orange-600 font-medium' : ''}>
+                          {item.quantity}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
               <div className="text-center py-8 text-gray-500">
                 <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                 <h3 className="text-lg font-medium mb-2">No inventory items yet</h3>
                 <p className="text-sm">Get started by adding your first inventory item.</p>
-                <Button className="mt-4">Add First Item</Button>
+                <div className="mt-4">
+                  <AddItemDialog 
+                    trigger={
+                      <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Add First Item
+                      </button>
+                    }
+                  />
+                </div>
               </div>
             )}
           </div>

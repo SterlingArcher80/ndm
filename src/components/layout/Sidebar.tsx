@@ -1,7 +1,7 @@
 
 import { Package, Home, BarChart3, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -29,21 +29,31 @@ const menuItems = [
   },
   {
     title: "Analytics",
-    url: "/inventory",
+    url: "/analytics",
     icon: BarChart3,
   },
   {
     title: "Settings",
-    url: "/inventory",
+    url: "/settings",
     icon: Settings,
   },
 ];
 
 const AppSidebar = () => {
   const { signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    await signOut();
+    try {
+      const { error } = await signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      } else {
+        navigate('/auth');
+      }
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (

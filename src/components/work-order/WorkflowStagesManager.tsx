@@ -4,38 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit2, GripVertical, Save, X } from 'lucide-react';
+import { Edit2, GripVertical, Save, X, Loader2 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-
-interface WorkflowStage {
-  id: string;
-  name: string;
-  color: string;
-  order: number;
-}
+import { useWorkflowStages } from './hooks/useWorkflowStages';
 
 const WorkflowStagesManager = () => {
-  const [stages, setStages] = useState<WorkflowStage[]>([
-    { id: '1', name: 'Open', color: 'bg-blue-500', order: 1 },
-    { id: '2', name: 'To be Invoiced', color: 'bg-yellow-500', order: 2 },
-    { id: '3', name: 'Shipped', color: 'bg-green-500', order: 3 },
-    { id: '4', name: 'Invoiced', color: 'bg-purple-500', order: 4 },
-    { id: '5', name: 'Customer History', color: 'bg-gray-500', order: 5 },
-    { id: '6', name: 'Dropship', color: 'bg-red-500', order: 6 }
-  ]);
-  
+  const { stages, loading, updateStageName, reorderStages } = useWorkflowStages();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
-  const handleEdit = (stage: WorkflowStage) => {
+  const handleEdit = (stage: { id: string; name: string }) => {
     setEditingId(stage.id);
     setEditingName(stage.name);
   };
 
-  const handleSave = (id: string) => {
-    setStages(prev => prev.map(stage => 
-      stage.id === id ? { ...stage, name: editingName } : stage
-    ));
+  const handleSave = async (id: string) => {
+    if (!editingName.trim()) return;
+    
+    await updateStageName(id, editingName.trim());
     setEditingId(null);
     setEditingName('');
   };
@@ -52,14 +38,25 @@ const WorkflowStagesManager = () => {
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    // Update order numbers
+    // Update order positions
     const updatedItems = items.map((item, index) => ({
       ...item,
-      order: index + 1
+      order_position: index + 1
     }));
 
-    setStages(updatedItems);
+    reorderStages(updatedItems);
   };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span className="ml-2">Loading workflow stages...</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -93,7 +90,7 @@ const WorkflowStagesManager = () => {
                           </div>
                           <div className={`w-4 h-4 rounded-full ${stage.color}`}></div>
                           <Badge variant="outline" className="min-w-[3rem] justify-center">
-                            {stage.order}
+                            {stage.order_position}
                           </Badge>
                           {editingId === stage.id ? (
                             <Input

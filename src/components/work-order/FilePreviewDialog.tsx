@@ -30,12 +30,33 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
-      toast.success('File record deleted');
+      toast.success('File record deleted successfully');
       onOpenChange(false);
     },
     onError: (error) => {
       console.error('Failed to delete file:', error);
       toast.error('Failed to delete file record');
+    }
+  });
+
+  const cleanupOrphanedFileMutation = useMutation({
+    mutationFn: async (fileId: string) => {
+      // Delete the orphaned database record
+      const { error } = await supabase
+        .from('work_order_items')
+        .delete()
+        .eq('id', fileId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+      toast.success('Orphaned file record cleaned up successfully');
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error('Failed to cleanup orphaned file:', error);
+      toast.error('Failed to cleanup orphaned file record');
     }
   });
 
@@ -64,6 +85,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
 
   const fileType = getFileType(file.name, file.mime_type);
   const fileUrl = file.file_url;
+  const isOrphanedFile = !fileUrl || !file.mime_type;
 
   console.log('File preview debug:', {
     fileName: file.name,
@@ -71,7 +93,9 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
     mimeType: file.mime_type,
     fileType: fileType,
     fileId: file.id,
-    hasFileUrl: !!fileUrl
+    hasFileUrl: !!fileUrl,
+    isOrphanedFile: isOrphanedFile,
+    filePath: file.file_path
   });
 
   const handleLoad = () => {
@@ -103,13 +127,19 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   };
 
   const handleDeleteFile = () => {
-    if (confirm(`Are you sure you want to delete the file record for "${file.name}"? This will remove it from the database but may not delete the actual file from storage.`)) {
+    if (confirm(`Are you sure you want to delete the file record for "${file.name}"?`)) {
       deleteFileMutation.mutate(file.id);
     }
   };
 
+  const handleCleanupOrphanedFile = () => {
+    if (confirm(`This file record appears to be orphaned (upload failed). Do you want to remove the database record for "${file.name}"?`)) {
+      cleanupOrphanedFileMutation.mutate(file.id);
+    }
+  };
+
   const renderPreview = () => {
-    if (!fileUrl) {
+    if (isOrphanedFile) {
       return (
         <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
           <div className="text-center max-w-md">
@@ -139,13 +169,13 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
                 Refresh Page
               </Button>
               <Button 
-                onClick={handleDeleteFile}
+                onClick={handleCleanupOrphanedFile}
                 variant="destructive" 
                 size="sm"
-                disabled={deleteFileMutation.isPending}
+                disabled={cleanupOrphanedFileMutation.isPending}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete Record
+                {cleanupOrphanedFileMutation.isPending ? 'Cleaning...' : 'Clean Up Record'}
               </Button>
             </div>
           </div>
@@ -245,10 +275,10 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold truncate pr-4">
-              {file.name}
+              {file.name} {isOrphanedFile && <span className="text-red-500 text-sm">(Upload Failed)</span>}
             </DialogTitle>
             <div className="flex items-center space-x-2">
-              {fileUrl && (
+              {fileUrl && !isOrphanedFile && (
                 <>
                   <Button onClick={downloadFile} variant="outline" size="sm">
                     <Download className="mr-2 h-4 w-4" />
@@ -260,6 +290,17 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
                   </Button>
                 </>
               )}
+              {!isOrphanedFile && (
+                <Button 
+                  onClick={handleDeleteFile} 
+                  variant="destructive" 
+                  size="sm"
+                  disabled={deleteFileMutation.isPending}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              )}
               <Button onClick={() => onOpenChange(false)} variant="ghost" size="sm">
                 <X className="h-4 w-4" />
               </Button>
@@ -267,11 +308,12 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
           </div>
           <DialogDescription className="text-sm text-gray-500">
             {(file.file_size || file.size) && `${file.file_size || file.size} • `}Modified {file.modifiedDate}
+            {isOrphanedFile && <span className="text-red-500 ml-2">• Upload incomplete</span>}
           </DialogDescription>
         </DialogHeader>
         
         <div className="mt-4 overflow-auto">
-          {isLoading && fileUrl && (
+          {isLoading && fileUrl && !isOrphanedFile && (
             <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>

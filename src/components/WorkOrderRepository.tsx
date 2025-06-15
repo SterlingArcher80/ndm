@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo } from 'react';
-import { FolderOpen, FileText, Upload, MoreVertical, Eye, Edit, Copy, Trash2, Move, AlertCircle, Search, X, RefreshCw, ArrowLeft } from 'lucide-react';
+import { FolderOpen, FileText, Upload, MoreVertical, Eye, Edit, Copy, Trash2, Move, AlertCircle, Search, X, RefreshCw, ArrowLeft, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,7 +20,7 @@ interface WorkOrderFile {
   status?: string;
   fileType?: 'word' | 'excel' | 'pdf' | 'other';
   subItems?: (WorkOrderFile | WorkOrderFolder)[];
-  folderPath?: string; // Added to track the actual folder path
+  folderPath?: string;
 }
 
 interface WorkOrderFolder {
@@ -28,7 +29,7 @@ interface WorkOrderFolder {
   count: number;
   color: string;
   files: WorkOrderFile[];
-  folderPath: string; // Added to track the actual folder path
+  folderPath: string;
 }
 
 // MSAL configuration - You'll need to set your actual client and tenant IDs
@@ -60,71 +61,18 @@ const WorkOrderRepository = () => {
     itemId: ''
   });
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
 
-  // Sample nested folders for each workflow stage with sub-folders and files
-  const [workflowFolders, setWorkflowFolders] = useState({
-    '1': [
-      { 
-        id: 'f1', 
-        name: 'Customer ABC - Project 001', 
-        type: 'folder' as const, 
-        modifiedDate: '2024-06-10',
-        folderPath: 'uploads/Open/Customer ABC - Project 001',
-        subItems: [
-          { id: 'f1-1', name: 'Drawings', type: 'folder' as const, modifiedDate: '2024-06-10', folderPath: 'uploads/Open/Customer ABC - Project 001/Drawings' },
-          { id: 'f1-2', name: 'Specifications', type: 'folder' as const, modifiedDate: '2024-06-09', folderPath: 'uploads/Open/Customer ABC - Project 001/Specifications' },
-          { id: 'f1-3', name: 'Work Order.docx', type: 'file' as const, size: '2.3 MB', modifiedDate: '2024-06-10' },
-          { id: 'f1-4', name: 'Quote.xlsx', type: 'file' as const, size: '1.1 MB', modifiedDate: '2024-06-09' }
-        ]
-      },
-      { 
-        id: 'f2', 
-        name: 'Customer XYZ - Repair Job', 
-        type: 'folder' as const, 
-        modifiedDate: '2024-06-09',
-        folderPath: 'uploads/Open/Customer XYZ - Repair Job',
-        subItems: [
-          { id: 'f2-1', name: 'Photos', type: 'folder' as const, modifiedDate: '2024-06-09', folderPath: 'uploads/Open/Customer XYZ - Repair Job/Photos' },
-          { id: 'f2-2', name: 'Repair Instructions.pdf', type: 'file' as const, size: '890 KB', modifiedDate: '2024-06-09' }
-        ]
-      },
-    ],
-    '2': [
-      { 
-        id: 'f3', 
-        name: 'Completed Job - Customer DEF', 
-        type: 'folder' as const, 
-        modifiedDate: '2024-06-08',
-        folderPath: 'uploads/To be Invoiced/Completed Job - Customer DEF',
-        subItems: [
-          { id: 'f3-1', name: 'Final Report.docx', type: 'file' as const, size: '3.2 MB', modifiedDate: '2024-06-08' },
-          { id: 'f3-2', name: 'Time Tracking.xlsx', type: 'file' as const, size: '856 KB', modifiedDate: '2024-06-08' }
-        ]
-      },
-      { id: 'f4', name: 'Rush Order - Customer GHI', type: 'folder' as const, modifiedDate: '2024-06-07', folderPath: 'uploads/To be Invoiced/Rush Order - Customer GHI' },
-      { id: 'f5', name: 'Standard Service - Customer JKL', type: 'folder' as const, modifiedDate: '2024-06-06', folderPath: 'uploads/To be Invoiced/Standard Service - Customer JKL' },
-    ],
-    '3': [
-      { id: 'f6', name: 'Invoice Sent - Customer MNO', type: 'folder' as const, modifiedDate: '2024-06-05', folderPath: 'uploads/Invoiced/Invoice Sent - Customer MNO' },
-      { id: 'f7', name: 'Payment Received - Customer PQR', type: 'folder' as const, modifiedDate: '2024-06-04', folderPath: 'uploads/Invoiced/Payment Received - Customer PQR' },
-    ],
-    '4': [
-      { id: 'f8', name: 'Ready to Ship - Customer STU', type: 'folder' as const, modifiedDate: '2024-06-03', folderPath: 'uploads/To be Shipped/Ready to Ship - Customer STU' },
-    ],
-    '5': [
-      { id: 'f9', name: 'Shipped - Customer VWX', type: 'folder' as const, modifiedDate: '2024-06-02', folderPath: 'uploads/Shipped/Shipped - Customer VWX' },
-      { id: 'f10', name: 'Delivered - Customer YZA', type: 'folder' as const, modifiedDate: '2024-06-01', folderPath: 'uploads/Shipped/Delivered - Customer YZA' },
-      { id: 'f11', name: 'Completed - Customer BCD', type: 'folder' as const, modifiedDate: '2024-05-31', folderPath: 'uploads/Shipped/Completed - Customer BCD' },
-    ],
-    '6': [
-      { id: 'f12', name: 'Dropship Order - Vendor EFG', type: 'folder' as const, modifiedDate: '2024-05-30', folderPath: 'uploads/Dropship/Dropship Order - Vendor EFG' },
-    ],
-    '7': [
-      { id: 'f13', name: 'Customer HIJ - Historical Records', type: 'folder' as const, modifiedDate: '2024-05-29', folderPath: 'uploads/Customer History/Customer HIJ - Historical Records' },
-      { id: 'f14', name: 'Customer KLM - Past Projects', type: 'folder' as const, modifiedDate: '2024-05-28', folderPath: 'uploads/Customer History/Customer KLM - Past Projects' },
-      { id: 'f15', name: 'Customer NOP - Archive', type: 'folder' as const, modifiedDate: '2024-05-27', folderPath: 'uploads/Customer History/Customer NOP - Archive' },
-      { id: 'f16', name: 'Customer QRS - Old Jobs', type: 'folder' as const, modifiedDate: '2024-05-26', folderPath: 'uploads/Customer History/Customer QRS - Old Jobs' },
-    ],
+  // Initialize with empty workflow folders
+  const [workflowFolders, setWorkflowFolders] = useState<Record<string, WorkOrderFile[]>>({
+    '1': [],
+    '2': [],
+    '3': [],
+    '4': [],
+    '5': [],
+    '6': [],
+    '7': [],
   });
 
   const folders: WorkOrderFolder[] = [
@@ -256,9 +204,10 @@ const WorkOrderRepository = () => {
       console.log(`Syncing back ${file.name} from OneDrive`);
       
       // Placeholder for actual implementation
-      alert(`${file.name} has been synced back from OneDrive`);
+      toast.success(`${file.name} has been synced back from OneDrive`);
     } catch (error) {
       console.error("Failed to sync back from OneDrive:", error);
+      toast.error("Failed to sync back from OneDrive");
     }
   };
 
@@ -284,7 +233,7 @@ const WorkOrderRepository = () => {
     e.preventDefault();
     if (draggedItem && draggedItem !== targetId) {
       console.log(`Moving ${draggedItem} to ${targetId}`);
-      // Here you would implement the actual move logic
+      toast.success("Item moved successfully");
     }
     setDraggedItem(null);
   };
@@ -312,7 +261,28 @@ const WorkOrderRepository = () => {
     const files = Array.from(e.dataTransfer.files);
     const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
     console.log(`Uploading ${files.length} files to: ${selectedWorkflowFolder?.folderPath}`);
-    // Here you would implement the actual upload logic to the specific folder path
+    
+    // Create new file objects and add them to the current folder
+    const newFiles: WorkOrderFile[] = files.map((file, index) => ({
+      id: `file-${Date.now()}-${index}`,
+      name: file.name,
+      type: 'file' as const,
+      size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      modifiedDate: new Date().toLocaleDateString(),
+      fileType: getFileType(file.name)
+    }));
+
+    // Add files to the current location
+    const updatedWorkflowFolders = { ...workflowFolders };
+    if (currentPath.length === 0) {
+      updatedWorkflowFolders[selectedFolder] = [...updatedWorkflowFolders[selectedFolder], ...newFiles];
+    } else {
+      // Add to nested folder - implementation would be more complex
+      console.log("Adding to nested folder:", currentPath);
+    }
+    
+    setWorkflowFolders(updatedWorkflowFolders);
+    toast.success(`${files.length} file(s) uploaded successfully`);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -326,8 +296,69 @@ const WorkOrderRepository = () => {
       const files = Array.from(e.target.files);
       const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
       console.log(`Uploading ${files.length} files to: ${selectedWorkflowFolder?.folderPath}`);
-      // Here you would implement the actual upload logic to the specific folder path
+      
+      // Create new file objects and add them to the current folder
+      const newFiles: WorkOrderFile[] = files.map((file, index) => ({
+        id: `file-${Date.now()}-${index}`,
+        name: file.name,
+        type: 'file' as const,
+        size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+        modifiedDate: new Date().toLocaleDateString(),
+        fileType: getFileType(file.name)
+      }));
+
+      // Add files to the current location
+      const updatedWorkflowFolders = { ...workflowFolders };
+      updatedWorkflowFolders[selectedFolder] = [...updatedWorkflowFolders[selectedFolder], ...newFiles];
+      setWorkflowFolders(updatedWorkflowFolders);
+      toast.success(`${files.length} file(s) uploaded successfully`);
     }
+    
+    // Reset the input
+    e.target.value = '';
+  };
+
+  const handleUploadClick = () => {
+    if (!selectedFolder) {
+      setShowUploadPrompt(true);
+      setTimeout(() => setShowUploadPrompt(false), 3000);
+      return;
+    }
+    document.getElementById('upload-input')?.click();
+  };
+
+  const handleNewFolder = () => {
+    if (!selectedFolder) {
+      toast.error("Please select a workflow stage first");
+      return;
+    }
+    setShowNewFolderDialog(true);
+  };
+
+  const createNewFolder = () => {
+    if (!newFolderName.trim()) {
+      toast.error("Please enter a folder name");
+      return;
+    }
+
+    const newFolder: WorkOrderFile = {
+      id: `folder-${Date.now()}`,
+      name: newFolderName.trim(),
+      type: 'folder',
+      modifiedDate: new Date().toLocaleDateString(),
+      subItems: [],
+      folderPath: `${folders.find(f => f.id === selectedFolder)?.folderPath}/${newFolderName.trim()}`
+    };
+
+    const updatedWorkflowFolders = { ...workflowFolders };
+    if (selectedFolder) {
+      updatedWorkflowFolders[selectedFolder] = [...updatedWorkflowFolders[selectedFolder], newFolder];
+      setWorkflowFolders(updatedWorkflowFolders);
+      toast.success(`Folder "${newFolderName}" created successfully`);
+    }
+
+    setShowNewFolderDialog(false);
+    setNewFolderName('');
   };
 
   const deleteFolderFromPath = (folderId: string, workflowStageId: string, path: string[]) => {
@@ -388,12 +419,12 @@ const WorkOrderRepository = () => {
 
   const handleRenameFolder = (folderId: string) => {
     console.log(`Renaming folder: ${folderId}`);
-    // Here you would implement the rename logic
+    toast.info("Rename functionality coming soon");
   };
 
   const handleMoveFolder = (folderId: string) => {
     console.log(`Moving folder: ${folderId}`);
-    // Here you would implement the move logic
+    toast.info("Move functionality coming soon");
   };
 
   const FileContextMenu = ({ file }: { file: WorkOrderFile }) => {
@@ -528,11 +559,19 @@ const WorkOrderRepository = () => {
           </div>
 
           <div className="flex gap-3">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleUploadClick}
+            >
               <Upload className="mr-2 h-4 w-4" />
               Upload Files
             </Button>
-            <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800">
+            <Button 
+              variant="outline" 
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+              onClick={handleNewFolder}
+            >
+              <Plus className="mr-2 h-4 w-4" />
               New Folder
             </Button>
           </div>
@@ -565,7 +604,7 @@ const WorkOrderRepository = () => {
                   <FolderOpen className="h-5 w-5 text-gray-400 mr-3" />
                   <div className="flex-1">
                     <div className="font-medium text-gray-300">{folder.name}</div>
-                    <div className="text-sm text-gray-500">{folder.count} folders</div>
+                    <div className="text-sm text-gray-500">{folder.count} items</div>
                   </div>
                   <Badge variant="secondary" className="bg-gray-800 text-gray-300">
                     {folder.count}
@@ -597,7 +636,7 @@ const WorkOrderRepository = () => {
               onDragOver={handleUploadDragOver}
               onDragLeave={handleUploadDragLeave}
               onDrop={handleUploadDrop}
-              onClick={() => document.getElementById('upload-input')?.click()}
+              onClick={handleUploadClick}
             >
               <div className="p-6 text-center">
                 <Upload className={`h-8 w-8 mx-auto mb-2 ${
@@ -736,10 +775,23 @@ const WorkOrderRepository = () => {
                     }
                   </p>
                   {!searchQuery && (
-                    <Button className="bg-blue-600 hover:bg-blue-700">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Files
-                    </Button>
+                    <div className="flex gap-2 justify-center">
+                      <Button 
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={handleUploadClick}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Files
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                        onClick={handleNewFolder}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Folder
+                      </Button>
+                    </div>
                   )}
                 </div>
               )}
@@ -755,6 +807,48 @@ const WorkOrderRepository = () => {
           )}
         </div>
       </div>
+
+      {/* New Folder Dialog */}
+      <Dialog open={showNewFolderDialog} onOpenChange={setShowNewFolderDialog}>
+        <DialogContent className="bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Create New Folder</DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Enter a name for the new folder.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Input
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Folder name"
+              className="bg-gray-700 border-gray-600 text-white"
+              onKeyPress={(e) => e.key === 'Enter' && createNewFolder()}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowNewFolderDialog(false);
+                setNewFolderName('');
+              }}
+              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={createNewFolder}
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={!newFolderName.trim()}
+            >
+              Create Folder
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>

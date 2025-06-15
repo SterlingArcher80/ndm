@@ -1,5 +1,5 @@
 
-import { Package, Home, BarChart3, Settings, LogOut } from 'lucide-react';
+import { Package, Home, BarChart3, Settings, LogOut, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Link, useNavigate } from 'react-router-dom';
 import {
@@ -18,14 +18,19 @@ import { Button } from '@/components/ui/button';
 
 const menuItems = [
   {
+    title: "Work Orders",
+    url: "/work-orders",
+    icon: FileText,
+  },
+  {
+    title: "Inventory System",
+    url: "/inventory",
+    icon: Package,
+  },
+  {
     title: "Dashboard",
     url: "/",
     icon: Home,
-  },
-  {
-    title: "Inventory",
-    url: "/inventory",
-    icon: Package,
   },
   {
     title: "Analytics",

@@ -1,24 +1,22 @@
-
 import { useMemo } from 'react';
 import { WorkOrderFile, WorkOrderFolder } from '../types';
 
 export const useWorkOrderFolders = (workOrderItems: any[], searchQuery: string) => {
   const folders = useMemo(() => {
+    // Define all workflow stages that should always be displayed
+    const allStages = ['1', '2', '3', '4', '5', '6'];
     const foldersMap = new Map<string, WorkOrderFolder>();
     
-    // First pass: create folders
-    workOrderItems.forEach(item => {
-      const stageId = item.workflow_stage_id;
-      if (!foldersMap.has(stageId)) {
-        foldersMap.set(stageId, {
-          id: stageId,
-          name: getStageName(stageId),
-          count: 0,
-          color: getStageColor(stageId),
-          files: [],
-          folderPath: getStagePath(stageId)
-        });
-      }
+    // First pass: create all folders (even empty ones)
+    allStages.forEach(stageId => {
+      foldersMap.set(stageId, {
+        id: stageId,
+        name: getStageName(stageId),
+        count: 0,
+        color: getStageColor(stageId),
+        files: [],
+        folderPath: getStagePath(stageId)
+      });
     });
 
     // Second pass: add items to folders with proper field mapping

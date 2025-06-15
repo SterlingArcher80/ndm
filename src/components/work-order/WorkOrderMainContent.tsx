@@ -1,12 +1,14 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FolderOpen } from 'lucide-react';
 import WorkOrderBreadcrumb from './WorkOrderBreadcrumb';
 import WorkOrderGrid from './WorkOrderGrid';
 import WorkOrderEmptyState from './WorkOrderEmptyState';
 import UploadArea from './UploadArea';
+import MoveItemDialog from './MoveItemDialog';
 import { useWorkOrderNavigation } from './hooks/useWorkOrderNavigation';
 import { useWorkOrderFolders } from './hooks/useWorkOrderFolders';
+import { WorkOrderFile } from './types';
 
 interface WorkOrderMainContentProps {
   workOrderItems: any[];
@@ -27,6 +29,11 @@ const WorkOrderMainContent = ({
   setDeleteDialog,
   setShowNewFolderDialog
 }: WorkOrderMainContentProps) => {
+  const [moveDialog, setMoveDialog] = useState<{
+    open: boolean;
+    item: WorkOrderFile | null;
+  }>({ open: false, item: null });
+
   const { folders } = useWorkOrderFolders(workOrderItems, searchQuery);
   const { 
     getCurrentFolderContents, 
@@ -37,6 +44,10 @@ const WorkOrderMainContent = ({
 
   const currentContents = getCurrentFolderContents();
   const breadcrumbPath = getBreadcrumbPath();
+
+  const handleMoveFile = (file: WorkOrderFile) => {
+    setMoveDialog({ open: true, item: file });
+  };
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -66,6 +77,8 @@ const WorkOrderMainContent = ({
                 items={currentContents}
                 onFolderClick={navigateToFolder}
                 onDeleteFolder={setDeleteDialog}
+                onDeleteFile={setDeleteDialog}
+                onMoveFile={handleMoveFile}
               />
             ) : (
               <WorkOrderEmptyState 
@@ -90,6 +103,13 @@ const WorkOrderMainContent = ({
         selectedFolder={selectedFolder}
         folders={folders}
         currentPath={currentPath}
+      />
+
+      <MoveItemDialog
+        open={moveDialog.open}
+        onOpenChange={(open) => setMoveDialog({ open, item: null })}
+        item={moveDialog.item}
+        folders={folders}
       />
     </div>
   );

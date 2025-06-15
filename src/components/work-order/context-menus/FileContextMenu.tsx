@@ -8,9 +8,11 @@ import { useOffice365Integration } from '../hooks/useOffice365Integration';
 
 interface FileContextMenuProps {
   file: WorkOrderFile;
+  onDelete?: (dialog: { open: boolean; itemName: string; itemId: string }) => void;
+  onMove?: (file: WorkOrderFile) => void;
 }
 
-const FileContextMenu = ({ file }: FileContextMenuProps) => {
+const FileContextMenu = ({ file, onDelete, onMove }: FileContextMenuProps) => {
   const { editInOffice365, syncBackFromOneDrive } = useOffice365Integration();
   
   const getFileType = (fileName: string): 'word' | 'excel' | 'pdf' | 'other' => {
@@ -23,6 +25,22 @@ const FileContextMenu = ({ file }: FileContextMenuProps) => {
 
   const fileType = getFileType(file.name);
   const canEditInOffice = fileType === 'word' || fileType === 'excel';
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete({
+        open: true,
+        itemName: file.name,
+        itemId: file.id
+      });
+    }
+  };
+
+  const handleMove = () => {
+    if (onMove) {
+      onMove(file);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -65,11 +83,23 @@ const FileContextMenu = ({ file }: FileContextMenuProps) => {
           <Copy className="mr-2 h-4 w-4" />
           Rename
         </DropdownMenuItem>
-        <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
+        <DropdownMenuItem 
+          className="text-gray-300 hover:bg-gray-700"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleMove();
+          }}
+        >
           <Move className="mr-2 h-4 w-4" />
           Move to...
         </DropdownMenuItem>
-        <DropdownMenuItem className="text-red-400 hover:bg-gray-700">
+        <DropdownMenuItem 
+          className="text-red-400 hover:bg-gray-700"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDelete();
+          }}
+        >
           <Trash2 className="mr-2 h-4 w-4" />
           Delete
         </DropdownMenuItem>

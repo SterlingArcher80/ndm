@@ -1,4 +1,3 @@
-
 import { LogOut, Settings, Sun, Moon, Monitor } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
@@ -80,7 +79,7 @@ const AppSidebar = () => {
         <h2 className="text-lg font-semibold">Nucleus</h2>
         <p className="text-sm text-gray-600">- powered by DMSI</p>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="bg-gray-100 dark:bg-gray-900">
         {/* Theme selector above Settings */}
         <ThemeSelector />
         <SidebarGroup>
@@ -98,9 +97,9 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 bg-gray-100 dark:bg-gray-900">
         <div className="mb-2">
-          <p className="text-sm text-gray-600">{user?.email}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-300">{user?.email}</p>
         </div>
         <Button onClick={handleSignOut} variant="outline" className="w-full">
           <LogOut className="mr-2 h-4 w-4" />

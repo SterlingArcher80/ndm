@@ -3,14 +3,25 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
-// Get root <html> element for theme class switch
-const html = document.documentElement;
+// Only allow exactly these themes
+const allowedThemes = ["light", "dark", "system"] as const;
+type Theme = typeof allowedThemes[number];
+function normalizeTheme(theme: string): Theme {
+  return allowedThemes.includes(theme as Theme) ? (theme as Theme) : "system";
+}
 
 export function useThemePreference() {
   const { user } = useAuth();
-  const [theme, setThemeState] = useState<"light" | "dark" | "system">("system");
+  const [theme, setThemeState] = useState<Theme>(() => {
+    // On first run, try to detect from localStorage or default to "system"
+    if (typeof window !== "undefined") {
+      const local = window.localStorage.getItem("theme");
+      return normalizeTheme(local || "system");
+    }
+    return "system";
+  });
 
-  // Load theme from profile on mount or user change
+  // Load from supabase profile (if present) on mount or user change
   useEffect(() => {
     if (!user) return;
     supabase
@@ -20,22 +31,23 @@ export function useThemePreference() {
       .maybeSingle()
       .then(({ data }) => {
         if (data?.theme) {
-          setThemeState(data.theme as "light" | "dark" | "system");
-          applyTheme(data.theme as "light" | "dark" | "system");
+          setThemeState(normalizeTheme(data.theme));
+          applyTheme(data.theme);
+          window.localStorage.setItem("theme", data.theme);
         }
       });
   }, [user]);
 
+  // Apply theme when `theme` local state changes
   useEffect(() => {
-    // Apply on mount for system (fallback)
     applyTheme(theme);
-    // eslint-disable-next-line
-  }, []);
+    window.localStorage.setItem("theme", theme);
+  }, [theme]);
 
-  function setTheme(next: "light" | "dark" | "system") {
+  function setTheme(next: Theme) {
     setThemeState(next);
     applyTheme(next);
-    // store in db (if logged in)
+    window.localStorage.setItem("theme", next);
     if (user) {
       supabase
         .from("profiles")
@@ -45,16 +57,15 @@ export function useThemePreference() {
     }
   }
 
-  function applyTheme(t: "light" | "dark" | "system") {
-    if (t === "system") {
-      const prefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches;
-      html.classList.remove("light", "dark");
+  function applyTheme(t: string) {
+    const html = document.documentElement;
+    const themeToApply = normalizeTheme(t);
+    html.classList.remove("light", "dark");
+    if (themeToApply === "system") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       html.classList.add(prefersDark ? "dark" : "light");
     } else {
-      html.classList.remove("light", "dark");
-      html.classList.add(t);
+      html.classList.add(themeToApply);
     }
   }
 

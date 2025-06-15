@@ -1,11 +1,9 @@
-
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import TopNavbar from "@/components/layout/TopNavbar";
 import InventoryDashboard from "@/components/inventory/InventoryDashboard";
 
-// Dark background class is now applied here to match Work Orders
 const InventorySystem = () => {
   const { user, loading } = useAuth();
 
@@ -22,11 +20,11 @@ const InventorySystem = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-950">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <TopNavbar />
-        <main className="flex-1 p-6 w-full">
+        <main className="flex-1 p-6 w-full bg-gray-50 dark:bg-gray-950">
           <div className="w-full">
             <InventoryDashboard />
           </div>

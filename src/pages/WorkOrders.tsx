@@ -10,8 +10,8 @@ const WorkOrders = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen dark:bg-gray-950 bg-gray-50">
+        <div className="text-lg text-gray-300">Loading...</div>
       </div>
     );
   }
@@ -21,11 +21,11 @@ const WorkOrders = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <TopNavbar />
-        <main className="flex-1 p-6 w-full">
+        <main className="flex-1 p-6 w-full bg-gray-50 dark:bg-gray-950">
           <div className="w-full">
             <WorkOrderRepository />
           </div>

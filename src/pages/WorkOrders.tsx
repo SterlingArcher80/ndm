@@ -27,10 +27,6 @@ const WorkOrders = () => {
         <TopNavbar />
         <main className="flex-1 p-6">
           <div className="max-w-full mx-auto">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Work Orders</h1>
-              <p className="text-gray-600">Nucleus document management system</p>
-            </div>
             <WorkOrderRepository />
           </div>
         </main>

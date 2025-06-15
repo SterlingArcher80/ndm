@@ -49,6 +49,9 @@ const WorkOrderMainContent = ({
     setMoveDialog({ open: true, item });
   };
 
+  // Calculate folder count for display
+  const folderCount = currentContents.filter(item => item.type === 'folder').length;
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 p-6 overflow-y-auto">
@@ -66,7 +69,7 @@ const WorkOrderMainContent = ({
                   {breadcrumbPath.length > 0 ? breadcrumbPath[breadcrumbPath.length - 1].name : 'Select a folder'}
                 </h2>
                 <p className="text-gray-400 mt-1">
-                  {currentContents.length} items
+                  {folderCount} folders, {currentContents.length - folderCount} files
                   {searchQuery && ` (filtered by "${searchQuery}")`}
                 </p>
               </div>

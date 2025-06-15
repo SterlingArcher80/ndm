@@ -14,6 +14,7 @@ export interface WorkOrderFile {
   parent_id?: string;
   file_url?: string;
   mime_type?: string;
+  file_path?: string;
 }
 
 export interface WorkOrderFolder {

@@ -12,6 +12,7 @@ interface WorkOrderSidebarProps {
   setSelectedFolder: (id: string) => void;
   setCurrentPath: (path: string[]) => void;
   searchQuery: string;
+  currentPath: string[];
 }
 
 const WorkOrderSidebar = ({ 
@@ -19,7 +20,8 @@ const WorkOrderSidebar = ({
   selectedFolder, 
   setSelectedFolder, 
   setCurrentPath, 
-  searchQuery 
+  searchQuery,
+  currentPath
 }: WorkOrderSidebarProps) => {
   const { folders, filteredFolders } = useWorkOrderFolders(workOrderItems, searchQuery);
 
@@ -56,7 +58,11 @@ const WorkOrderSidebar = ({
         </div>
       </div>
 
-      <UploadArea selectedFolder={selectedFolder} folders={folders} />
+      <UploadArea 
+        selectedFolder={selectedFolder} 
+        folders={folders} 
+        currentPath={currentPath}
+      />
     </div>
   );
 };

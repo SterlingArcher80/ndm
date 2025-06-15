@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Upload, AlertCircle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -41,11 +40,12 @@ const UploadArea = ({ selectedFolder, folders, currentPath }: UploadAreaProps) =
     
     for (const pathId of currentPath) {
       const folderItem = currentItems.find(item => item.id === pathId && item.type === 'folder');
-      if (folderItem) {
+      if (folderItem && folderItem.subItems) {
         pathSegments.push(folderItem.name);
-        if (folderItem.subItems) {
-          currentItems = folderItem.subItems;
-        }
+        // Filter subItems to only include WorkOrderFile types
+        currentItems = folderItem.subItems.filter(item => 
+          'workflow_stage_id' in item && 'modifiedDate' in item
+        );
       }
     }
     

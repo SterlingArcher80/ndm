@@ -1,71 +1,60 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import WorkOrderHeader from './work-order/WorkOrderHeader';
+import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import WorkOrderSidebar from './work-order/WorkOrderSidebar';
 import WorkOrderMainContent from './work-order/WorkOrderMainContent';
+import WorkOrderHeader from './work-order/WorkOrderHeader';
 import WorkOrderDialogs from './work-order/WorkOrderDialogs';
-import { WorkOrderFile, WorkOrderFolder } from './work-order/types';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const WorkOrderRepository = () => {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; itemName: string; itemId: string }>({
+  const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     itemName: '',
     itemId: ''
   });
-  const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
 
-  // Fetch work order items from Supabase
-  const { data: workOrderItems = [], isLoading } = useQuery({
+  const { data: workOrderItems = [] } = useQuery({
     queryKey: ['work-order-items'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('work_order_items')
         .select('*')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Error fetching work order items:', error);
-        throw error;
-      }
-      
+      if (error) throw error;
       return data || [];
     }
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
-        <div className="text-lg text-white">Loading...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="h-[calc(100vh-12rem)] bg-gray-900 text-white rounded-lg overflow-hidden border border-gray-800">
       <WorkOrderHeader 
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         selectedFolder={selectedFolder}
+        currentPath={currentPath}
+        folders={[]}
         setShowNewFolderDialog={setShowNewFolderDialog}
       />
-
-      <div className="flex h-[calc(100vh-80px)]">
-        <WorkOrderSidebar
+      
+      <div className="flex h-[calc(100%-4rem)]">
+        <WorkOrderSidebar 
           workOrderItems={workOrderItems}
           selectedFolder={selectedFolder}
           setSelectedFolder={setSelectedFolder}
           setCurrentPath={setCurrentPath}
           searchQuery={searchQuery}
+          currentPath={currentPath}
         />
-
-        <WorkOrderMainContent
+        
+        <WorkOrderMainContent 
           workOrderItems={workOrderItems}
           selectedFolder={selectedFolder}
           currentPath={currentPath}
@@ -77,16 +66,12 @@ const WorkOrderRepository = () => {
       </div>
 
       <WorkOrderDialogs
-        showNewFolderDialog={showNewFolderDialog}
-        setShowNewFolderDialog={setShowNewFolderDialog}
-        newFolderName={newFolderName}
-        setNewFolderName={setNewFolderName}
-        selectedFolder={selectedFolder}
-        currentPath={currentPath}
         deleteDialog={deleteDialog}
         setDeleteDialog={setDeleteDialog}
-        deleteConfirmation={deleteConfirmation}
-        setDeleteConfirmation={setDeleteConfirmation}
+        showNewFolderDialog={showNewFolderDialog}
+        setShowNewFolderDialog={setShowNewFolderDialog}
+        selectedFolder={selectedFolder}
+        currentPath={currentPath}
       />
     </div>
   );

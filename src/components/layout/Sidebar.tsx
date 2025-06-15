@@ -1,8 +1,7 @@
 
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, Sun, Moon, Monitor } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -12,9 +11,43 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarGroup,
-  SidebarGroupContent
+  SidebarGroupContent,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import { useThemePreference } from '../hooks/useThemePreference';
+
+const ThemeSelector = () => {
+  const { theme, setTheme } = useThemePreference();
+  const options = [
+    { name: 'System', value: 'system', icon: Monitor },
+    { name: 'Light', value: 'light', icon: Sun },
+    { name: 'Dark', value: 'dark', icon: Moon },
+  ];
+
+  return (
+    <div className="mb-4">
+      <label className="block text-xs text-gray-500 pl-1 mb-1">Theme</label>
+      <div className="flex gap-1">
+        {options.map(({ name, value, icon: Icon }) => (
+          <button
+            key={value}
+            aria-label={`Switch to ${name} mode`}
+            className={`flex-1 flex items-center gap-1 px-2 py-1 rounded transition
+              ${theme === value
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'}
+            `}
+            onClick={() => setTheme(value)}
+            type="button"
+          >
+            <Icon className="w-4 h-4" />
+            <span className="text-xs">{name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const AppSidebar = () => {
   const { user, signOut } = useAuth();
@@ -34,12 +67,14 @@ const AppSidebar = () => {
   };
 
   return (
-    <Sidebar>
-      <SidebarHeader className="p-4">
+    <Sidebar defaultOpen={false}>
+      <SidebarHeader className="p-4 pb-0">
         <h2 className="text-lg font-semibold">Nucleus</h2>
         <p className="text-sm text-gray-600">- powered by DMSI</p>
       </SidebarHeader>
       <SidebarContent>
+        {/* Theme selector above Settings */}
+        <ThemeSelector />
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

@@ -25,8 +25,8 @@ const WorkOrders = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <TopNavbar />
-        <main className="flex-1 p-6">
-          <div className="max-w-full mx-auto">
+        <main className="flex-1 p-6 w-full">
+          <div className="w-full">
             <WorkOrderRepository />
           </div>
         </main>

@@ -25,8 +25,10 @@ const InventorySystem = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <TopNavbar />
-        <main className="flex-1 p-6">
-          <InventoryDashboard />
+        <main className="flex-1 p-6 w-full">
+          <div className="w-full">
+            <InventoryDashboard />
+          </div>
         </main>
       </div>
     </div>

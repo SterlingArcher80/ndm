@@ -25,8 +25,8 @@ const ManageSettings = () => {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <TopNavbar />
-        <main className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto">
+        <main className="flex-1 p-6 w-full">
+          <div className="w-full">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
               <p className="text-gray-600">Manage categories and locations for your inventory</p>

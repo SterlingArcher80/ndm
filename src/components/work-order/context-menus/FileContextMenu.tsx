@@ -10,9 +10,10 @@ interface FileContextMenuProps {
   file: WorkOrderFile;
   onDelete?: (dialog: { open: boolean; itemName: string; itemId: string }) => void;
   onMove?: (file: WorkOrderFile) => void;
+  onPreview?: (file: WorkOrderFile) => void;
 }
 
-const FileContextMenu = ({ file, onDelete, onMove }: FileContextMenuProps) => {
+const FileContextMenu = ({ file, onDelete, onMove, onPreview }: FileContextMenuProps) => {
   const { editInOffice365, syncBackFromOneDrive } = useOffice365Integration();
   
   const getFileType = (fileName: string): 'word' | 'excel' | 'pdf' | 'other' => {
@@ -42,6 +43,12 @@ const FileContextMenu = ({ file, onDelete, onMove }: FileContextMenuProps) => {
     }
   };
 
+  const handlePreview = () => {
+    if (onPreview) {
+      onPreview(file);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -50,7 +57,13 @@ const FileContextMenu = ({ file, onDelete, onMove }: FileContextMenuProps) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-48 bg-gray-800 border-gray-700">
-        <DropdownMenuItem className="text-gray-300 hover:bg-gray-700">
+        <DropdownMenuItem 
+          className="text-gray-300 hover:bg-gray-700"
+          onClick={(e) => {
+            e.stopPropagation();
+            handlePreview();
+          }}
+        >
           <Eye className="mr-2 h-4 w-4" />
           Preview
         </DropdownMenuItem>

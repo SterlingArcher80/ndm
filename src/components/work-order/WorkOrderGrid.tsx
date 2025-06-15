@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { FolderOpen, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { WorkOrderFile } from './types';
 import FileContextMenu from './context-menus/FileContextMenu';
 import FolderContextMenu from './context-menus/FolderContextMenu';
+import FilePreviewDialog from './FilePreviewDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -26,6 +28,10 @@ const WorkOrderGrid = ({
   onMoveFolder
 }: WorkOrderGridProps) => {
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const [previewDialog, setPreviewDialog] = useState<{
+    open: boolean;
+    file: WorkOrderFile | null;
+  }>({ open: false, file: null });
   const queryClient = useQueryClient();
 
   const moveToFolderMutation = useMutation({
@@ -79,65 +85,83 @@ const WorkOrderGrid = ({
     }
   };
 
+  const handlePreview = (file: WorkOrderFile) => {
+    setPreviewDialog({ open: true, file });
+  };
+
+  const handleItemClick = (item: WorkOrderFile) => {
+    if (item.type === 'folder') {
+      onFolderClick(item.id);
+    } else {
+      // Double-click to preview files
+      handlePreview(item);
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-      {items.map((item) => (
-        <Card
-          key={item.id}
-          className={`bg-gray-800 border-gray-700 hover:bg-gray-750 transition-all duration-200 cursor-pointer ${
-            item.type === 'folder' && dragOverFolderId === item.id 
-              ? 'border-blue-500 bg-blue-500/10' 
-              : ''
-          }`}
-          draggable
-          onDragStart={(e) => handleDragStart(e, item.id)}
-          onDragOver={(e) => item.type === 'folder' ? handleDragOver(e, item.id) : undefined}
-          onDragLeave={(e) => item.type === 'folder' ? handleDragLeave(e) : undefined}
-          onDrop={(e) => item.type === 'folder' ? handleDrop(e, item.id) : undefined}
-          onClick={() => {
-            if (item.type === 'folder') {
-              onFolderClick(item.id);
-            }
-          }}
-        >
-          <div className="p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center">
-                {item.type === 'folder' ? (
-                  <FolderOpen className="h-8 w-8 text-blue-400 mr-3" />
-                ) : (
-                  <FileText className="h-8 w-8 text-gray-400 mr-3" />
-                )}
-                <div>
-                  <h3 className="font-medium text-white text-sm">{item.name}</h3>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {item.size && `${item.size} • `}Modified {item.modifiedDate}
-                  </p>
-                  {item.folderPath && (
-                    <p className="text-xs text-gray-500 mt-1" title={item.folderPath}>
-                      Path: {item.folderPath}
-                    </p>
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+        {items.map((item) => (
+          <Card
+            key={item.id}
+            className={`bg-gray-800 border-gray-700 hover:bg-gray-750 transition-all duration-200 cursor-pointer ${
+              item.type === 'folder' && dragOverFolderId === item.id 
+                ? 'border-blue-500 bg-blue-500/10' 
+                : ''
+            }`}
+            draggable
+            onDragStart={(e) => handleDragStart(e, item.id)}
+            onDragOver={(e) => item.type === 'folder' ? handleDragOver(e, item.id) : undefined}
+            onDragLeave={(e) => item.type === 'folder' ? handleDragLeave(e) : undefined}
+            onDrop={(e) => item.type === 'folder' ? handleDrop(e, item.id) : undefined}
+            onClick={() => handleItemClick(item)}
+          >
+            <div className="p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center">
+                  {item.type === 'folder' ? (
+                    <FolderOpen className="h-8 w-8 text-blue-400 mr-3" />
+                  ) : (
+                    <FileText className="h-8 w-8 text-gray-400 mr-3" />
                   )}
+                  <div>
+                    <h3 className="font-medium text-white text-sm">{item.name}</h3>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {item.size && `${item.size} • `}Modified {item.modifiedDate}
+                    </p>
+                    {item.folderPath && (
+                      <p className="text-xs text-gray-500 mt-1" title={item.folderPath}>
+                        Path: {item.folderPath}
+                      </p>
+                    )}
+                  </div>
                 </div>
+                {item.type === 'file' ? (
+                  <FileContextMenu 
+                    file={item} 
+                    onDelete={onDeleteFile}
+                    onMove={onMoveFile}
+                    onPreview={handlePreview}
+                  />
+                ) : (
+                  <FolderContextMenu 
+                    folder={item} 
+                    onDelete={onDeleteFolder}
+                    onMove={onMoveFolder}
+                  />
+                )}
               </div>
-              {item.type === 'file' ? (
-                <FileContextMenu 
-                  file={item} 
-                  onDelete={onDeleteFile}
-                  onMove={onMoveFile}
-                />
-              ) : (
-                <FolderContextMenu 
-                  folder={item} 
-                  onDelete={onDeleteFolder}
-                  onMove={onMoveFolder}
-                />
-              )}
             </div>
-          </div>
-        </Card>
-      ))}
-    </div>
+          </Card>
+        ))}
+      </div>
+
+      <FilePreviewDialog
+        open={previewDialog.open}
+        onOpenChange={(open) => setPreviewDialog({ open, file: null })}
+        file={previewDialog.file}
+      />
+    </>
   );
 };
 

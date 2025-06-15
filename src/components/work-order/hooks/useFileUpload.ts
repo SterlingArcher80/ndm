@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -51,25 +50,8 @@ export const useFileUpload = () => {
       });
 
       try {
-        // First, let's check if the bucket exists
-        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-        console.log('🪣 Available buckets:', buckets);
-        
-        if (bucketError) {
-          console.error('❌ Error listing buckets:', bucketError);
-          throw new Error(`Failed to access storage buckets: ${bucketError.message}`);
-        }
-
-        const workOrderBucket = buckets?.find(bucket => bucket.id === 'work-order-files');
-        if (!workOrderBucket) {
-          console.error('❌ work-order-files bucket not found');
-          throw new Error('Storage bucket "work-order-files" does not exist');
-        }
-
-        console.log('✅ Bucket found:', workOrderBucket);
-
-        // Upload file to Supabase Storage
-        console.log('⬆️ Starting storage upload...');
+        // Try to upload directly first, then handle bucket issues if they arise
+        console.log('⬆️ Attempting direct storage upload...');
         const { data: storageData, error: storageError } = await supabase.storage
           .from('work-order-files')
           .upload(storagePath, file, {
@@ -79,8 +61,23 @@ export const useFileUpload = () => {
 
         console.log('📤 Storage upload result:', { storageData, storageError });
 
+        // If upload fails due to bucket not found, let's check what's available
         if (storageError) {
           console.error('❌ Storage upload error:', storageError);
+          
+          // Check available buckets for debugging
+          const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+          console.log('🪣 Available buckets after error:', buckets);
+          
+          if (bucketError) {
+            console.error('❌ Error listing buckets:', bucketError);
+          }
+          
+          // If it's a bucket not found error, try to create it via RPC or provide helpful error
+          if (storageError.message?.includes('Bucket not found') || storageError.message?.includes('bucket')) {
+            throw new Error(`Storage bucket error: ${storageError.message}. Available buckets: ${buckets?.map(b => b.id).join(', ') || 'none'}`);
+          }
+          
           throw new Error(`Failed to upload file to storage: ${storageError.message}`);
         }
 

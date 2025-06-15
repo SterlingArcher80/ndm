@@ -49,12 +49,13 @@ export const useFileUpload = () => {
 
       console.log('Storage upload successful:', storageData);
 
-      // Get public URL for the uploaded file
+      // Get public URL for the uploaded file - use the correct format
       const { data: publicUrlData } = supabase.storage
         .from('work-order-files')
         .getPublicUrl(storagePath);
 
-      console.log('Public URL generated:', publicUrlData.publicUrl);
+      const publicUrl = publicUrlData.publicUrl;
+      console.log('Public URL generated:', publicUrl);
 
       // Save file metadata to database
       const { data: dbData, error: dbError } = await supabase
@@ -67,7 +68,7 @@ export const useFileUpload = () => {
           file_path: folderPath,
           file_size: `${Math.round(file.size / 1024)} KB`,
           file_type: getFileType(file.type),
-          file_url: publicUrlData.publicUrl,
+          file_url: publicUrl,
           mime_type: file.type
         })
         .select()

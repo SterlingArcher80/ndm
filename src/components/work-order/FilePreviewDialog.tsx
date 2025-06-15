@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, Download, ExternalLink, AlertCircle } from 'lucide-react';
 import { WorkOrderFile } from './types';
@@ -39,14 +39,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   };
 
   const fileType = getFileType(file.name, file.mime_type);
-  let fileUrl = file.file_url;
-
-  // If no file_url but we have an id, try to construct the URL from Supabase storage
-  if (!fileUrl && file.id) {
-    console.log('No file_url found, attempting to construct from storage path');
-    // Try to construct the URL using the storage bucket
-    fileUrl = `https://tmmtgnjwhpeackuieejd.supabase.co/storage/v1/object/public/work-order-files/${file.workflow_stage_id}/${file.id}`;
-  }
+  const fileUrl = file.file_url;
 
   console.log('File preview debug:', {
     fileName: file.name,
@@ -228,9 +221,9 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
               </Button>
             </div>
           </div>
-          <div className="text-sm text-gray-500">
-            {file.size && `${file.size} • `}Modified {file.modifiedDate}
-          </div>
+          <DialogDescription className="text-sm text-gray-500">
+            {file.file_size && `${file.file_size} • `}Modified {file.modifiedDate}
+          </DialogDescription>
         </DialogHeader>
         
         <div className="mt-4 overflow-auto">

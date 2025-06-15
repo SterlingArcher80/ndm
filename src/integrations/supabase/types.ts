@@ -147,7 +147,9 @@ export type Database = {
           file_path: string | null
           file_size: string | null
           file_type: string | null
+          file_url: string | null
           id: string
+          mime_type: string | null
           name: string
           parent_id: string | null
           type: string
@@ -159,7 +161,9 @@ export type Database = {
           file_path?: string | null
           file_size?: string | null
           file_type?: string | null
+          file_url?: string | null
           id?: string
+          mime_type?: string | null
           name: string
           parent_id?: string | null
           type: string
@@ -171,7 +175,9 @@ export type Database = {
           file_path?: string | null
           file_size?: string | null
           file_type?: string | null
+          file_url?: string | null
           id?: string
+          mime_type?: string | null
           name?: string
           parent_id?: string | null
           type?: string

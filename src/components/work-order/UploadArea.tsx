@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { Upload, AlertCircle } from 'lucide-react';
+import { Upload, AlertCircle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/components/ui/sonner';
 import { WorkOrderFolder } from './types';
+import { useFileUpload } from './hooks/useFileUpload';
 
 interface UploadAreaProps {
   selectedFolder: string | null;
@@ -14,6 +15,7 @@ interface UploadAreaProps {
 const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
   const [isDragOverUpload, setIsDragOverUpload] = useState(false);
   const [showUploadPrompt, setShowUploadPrompt] = useState(false);
+  const { uploadMultipleFiles, isUploading } = useFileUpload();
 
   const handleUploadDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -25,7 +27,7 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
     setIsDragOverUpload(false);
   };
 
-  const handleUploadDrop = (e: React.DragEvent) => {
+  const handleUploadDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOverUpload(false);
     
@@ -37,10 +39,15 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
 
     const files = Array.from(e.dataTransfer.files);
     const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
-    console.log(`Uploading ${files.length} files to: ${selectedWorkflowFolder?.folderPath}`);
     
-    // TODO: Implement file upload to Supabase
-    toast.success(`${files.length} file(s) uploaded successfully`);
+    if (files.length > 0 && selectedWorkflowFolder) {
+      await uploadMultipleFiles(
+        files, 
+        selectedFolder, 
+        undefined, 
+        selectedWorkflowFolder.folderPath
+      );
+    }
   };
 
   const handleUploadClick = () => {
@@ -52,7 +59,7 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
     document.getElementById('upload-input')?.click();
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!selectedFolder) {
       setShowUploadPrompt(true);
       setTimeout(() => setShowUploadPrompt(false), 3000);
@@ -62,10 +69,15 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
       const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
-      console.log(`Uploading ${files.length} files to: ${selectedWorkflowFolder?.folderPath}`);
       
-      // TODO: Implement file upload to Supabase
-      toast.success(`${files.length} file(s) uploaded successfully`);
+      if (files.length > 0 && selectedWorkflowFolder) {
+        await uploadMultipleFiles(
+          files, 
+          selectedFolder, 
+          undefined, 
+          selectedWorkflowFolder.folderPath
+        );
+      }
     }
     
     // Reset the input
@@ -90,18 +102,22 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
           isDragOverUpload 
             ? 'border-blue-500 bg-blue-500/10' 
             : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
-        }`}
+        } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
         onDragOver={handleUploadDragOver}
         onDragLeave={handleUploadDragLeave}
         onDrop={handleUploadDrop}
         onClick={handleUploadClick}
       >
         <div className="p-6 text-center">
-          <Upload className={`h-8 w-8 mx-auto mb-2 ${
-            isDragOverUpload ? 'text-blue-400' : 'text-gray-400'
-          }`} />
+          {isUploading ? (
+            <Loader2 className="h-8 w-8 mx-auto mb-2 text-blue-400 animate-spin" />
+          ) : (
+            <Upload className={`h-8 w-8 mx-auto mb-2 ${
+              isDragOverUpload ? 'text-blue-400' : 'text-gray-400'
+            }`} />
+          )}
           <p className="text-sm text-gray-300 mb-1">
-            Drop files here
+            {isUploading ? 'Uploading files...' : 'Drop files here'}
           </p>
           <p className="text-xs text-gray-500">
             {selectedFolder ? `→ ${folders.find(f => f.id === selectedFolder)?.folderPath}` : 'Select a stage first'}
@@ -116,6 +132,7 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
         className="hidden"
         onChange={handleFileSelect}
         accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif"
+        disabled={isUploading}
       />
     </div>
   );

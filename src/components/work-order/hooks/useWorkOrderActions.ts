@@ -1,13 +1,37 @@
 
 import { toast } from '@/components/ui/sonner';
+import { useFileUpload } from './useFileUpload';
 
 export const useWorkOrderActions = () => {
-  const handleUploadClick = (selectedFolder: string | null) => {
+  const { uploadMultipleFiles } = useFileUpload();
+
+  const handleUploadClick = (selectedFolder: string | null, folderPath?: string) => {
     if (!selectedFolder) {
       toast.error('Please select a workflow stage first');
       return;
     }
     document.getElementById('upload-input')?.click();
+  };
+
+  const handleFileUpload = async (
+    files: FileList | null, 
+    selectedFolder: string | null,
+    folderPath?: string
+  ) => {
+    if (!selectedFolder) {
+      toast.error('Please select a workflow stage first');
+      return;
+    }
+
+    if (files && files.length > 0) {
+      const fileArray = Array.from(files);
+      await uploadMultipleFiles(
+        fileArray, 
+        selectedFolder, 
+        undefined, 
+        folderPath || `uploads/stage-${selectedFolder}`
+      );
+    }
   };
 
   const handleNewFolder = (selectedFolder: string | null, setShowNewFolderDialog: (show: boolean) => void) => {
@@ -20,6 +44,7 @@ export const useWorkOrderActions = () => {
 
   return {
     handleUploadClick,
+    handleFileUpload,
     handleNewFolder
   };
 };

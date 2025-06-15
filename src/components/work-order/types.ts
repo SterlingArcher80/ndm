@@ -11,6 +11,8 @@ export interface WorkOrderFile {
   folderPath?: string;
   workflow_stage_id: string;
   parent_id?: string;
+  file_url?: string;
+  mime_type?: string;
 }
 
 export interface WorkOrderFolder {

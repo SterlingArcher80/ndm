@@ -49,9 +49,41 @@ export const useFolderMutations = (
     }
   });
 
-  // Mutation for deleting items
+  // Mutation for deleting items (including files from storage)
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
+      // First, get the item details to check if it's a file with storage
+      const { data: item, error: fetchError } = await supabase
+        .from('work_order_items')
+        .select('*')
+        .eq('id', itemId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching item:', fetchError);
+        throw fetchError;
+      }
+
+      // If it's a file with a storage URL, delete from storage first
+      if (item.type === 'file' && item.file_url) {
+        // Extract storage path from URL
+        const urlParts = item.file_url.split('/');
+        const bucketIndex = urlParts.findIndex(part => part === 'work-order-files');
+        if (bucketIndex !== -1 && bucketIndex < urlParts.length - 1) {
+          const storagePath = urlParts.slice(bucketIndex + 1).join('/');
+          
+          const { error: storageError } = await supabase.storage
+            .from('work-order-files')
+            .remove([storagePath]);
+
+          if (storageError) {
+            console.error('Error deleting file from storage:', storageError);
+            // Continue with database deletion even if storage deletion fails
+          }
+        }
+      }
+
+      // Delete from database
       const { error } = await supabase
         .from('work_order_items')
         .delete()

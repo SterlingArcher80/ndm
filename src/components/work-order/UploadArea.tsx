@@ -10,12 +10,47 @@ import { useFileUpload } from './hooks/useFileUpload';
 interface UploadAreaProps {
   selectedFolder: string | null;
   folders: WorkOrderFolder[];
+  currentPath: string[];
 }
 
-const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
+const UploadArea = ({ selectedFolder, folders, currentPath }: UploadAreaProps) => {
   const [isDragOverUpload, setIsDragOverUpload] = useState(false);
   const [showUploadPrompt, setShowUploadPrompt] = useState(false);
   const { uploadMultipleFiles, isUploading } = useFileUpload();
+
+  const getCurrentParentId = () => {
+    if (currentPath.length === 0) {
+      return undefined; // Root level
+    }
+    return currentPath[currentPath.length - 1]; // Current folder ID
+  };
+
+  const getCurrentFolderPath = () => {
+    if (!selectedFolder) return '';
+    
+    const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
+    if (!selectedWorkflowFolder) return '';
+    
+    if (currentPath.length === 0) {
+      return selectedWorkflowFolder.folderPath;
+    }
+    
+    // Build nested path based on current navigation
+    const pathSegments = [selectedWorkflowFolder.folderPath];
+    let currentItems = selectedWorkflowFolder.files;
+    
+    for (const pathId of currentPath) {
+      const folderItem = currentItems.find(item => item.id === pathId && item.type === 'folder');
+      if (folderItem) {
+        pathSegments.push(folderItem.name);
+        if (folderItem.subItems) {
+          currentItems = folderItem.subItems;
+        }
+      }
+    }
+    
+    return pathSegments.join('/');
+  };
 
   const handleUploadDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -38,14 +73,15 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
     }
 
     const files = Array.from(e.dataTransfer.files);
-    const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
+    const parentId = getCurrentParentId();
+    const folderPath = getCurrentFolderPath();
     
-    if (files.length > 0 && selectedWorkflowFolder) {
+    if (files.length > 0) {
       await uploadMultipleFiles(
         files, 
         selectedFolder, 
-        undefined, 
-        selectedWorkflowFolder.folderPath
+        parentId,
+        folderPath
       );
     }
   };
@@ -68,14 +104,15 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
 
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
+      const parentId = getCurrentParentId();
+      const folderPath = getCurrentFolderPath();
       
-      if (files.length > 0 && selectedWorkflowFolder) {
+      if (files.length > 0) {
         await uploadMultipleFiles(
           files, 
           selectedFolder, 
-          undefined, 
-          selectedWorkflowFolder.folderPath
+          parentId,
+          folderPath
         );
       }
     }
@@ -84,9 +121,11 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
     e.target.value = '';
   };
 
+  const displayPath = getCurrentFolderPath();
+
   return (
     <div className="p-4 border-t border-gray-800">
-      <h3 className="text-sm font-medium text-gray-300 mb-3">Upload to Current Stage</h3>
+      <h3 className="text-sm font-medium text-gray-300 mb-3">Upload to Current Location</h3>
       
       {showUploadPrompt && (
         <Alert className="mb-3 bg-orange-900/50 border-orange-700">
@@ -120,7 +159,7 @@ const UploadArea = ({ selectedFolder, folders }: UploadAreaProps) => {
             {isUploading ? 'Uploading files...' : 'Drop files here'}
           </p>
           <p className="text-xs text-gray-500">
-            {selectedFolder ? `→ ${folders.find(f => f.id === selectedFolder)?.folderPath}` : 'Select a stage first'}
+            {selectedFolder ? `→ ${displayPath}` : 'Select a stage first'}
           </p>
         </div>
       </Card>

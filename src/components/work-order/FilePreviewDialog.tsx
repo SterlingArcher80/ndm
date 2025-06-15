@@ -39,7 +39,22 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   };
 
   const fileType = getFileType(file.name, file.mime_type);
-  const fileUrl = file.file_url;
+  let fileUrl = file.file_url;
+
+  // If no file_url but we have an id, try to construct the URL from Supabase storage
+  if (!fileUrl && file.id) {
+    console.log('No file_url found, attempting to construct from storage path');
+    // Try to construct the URL using the storage bucket
+    fileUrl = `https://tmmtgnjwhpeackuieejd.supabase.co/storage/v1/object/public/work-order-files/${file.workflow_stage_id}/${file.id}`;
+  }
+
+  console.log('File preview debug:', {
+    fileName: file.name,
+    fileUrl: fileUrl,
+    mimeType: file.mime_type,
+    fileType: fileType,
+    fileId: file.id
+  });
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -49,6 +64,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   const handleError = () => {
     setIsLoading(false);
     setHasError(true);
+    console.error('Failed to load file:', fileUrl);
   };
 
   const openInNewTab = () => {
@@ -74,7 +90,9 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">File URL not available</p>
+            <p className="text-gray-600 mb-2">File URL not available</p>
+            <p className="text-xs text-gray-500 mb-4">File ID: {file.id}</p>
+            <p className="text-xs text-gray-500">The file may not have been uploaded to storage properly.</p>
           </div>
         </div>
       );
@@ -85,7 +103,8 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-2" />
-            <p className="text-gray-600 mb-4">Unable to preview this file</p>
+            <p className="text-gray-600 mb-2">Unable to preview this file</p>
+            <p className="text-xs text-gray-500 mb-4">URL: {fileUrl}</p>
             <Button onClick={openInNewTab} variant="outline">
               <ExternalLink className="mr-2 h-4 w-4" />
               Open in New Tab
@@ -192,14 +211,18 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
               {file.name}
             </DialogTitle>
             <div className="flex items-center space-x-2">
-              <Button onClick={downloadFile} variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                Download
-              </Button>
-              <Button onClick={openInNewTab} variant="outline" size="sm">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                Open
-              </Button>
+              {fileUrl && (
+                <>
+                  <Button onClick={downloadFile} variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                  <Button onClick={openInNewTab} variant="outline" size="sm">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Open
+                  </Button>
+                </>
+              )}
               <Button onClick={() => onOpenChange(false)} variant="ghost" size="sm">
                 <X className="h-4 w-4" />
               </Button>

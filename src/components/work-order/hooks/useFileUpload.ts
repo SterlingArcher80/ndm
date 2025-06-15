@@ -18,10 +18,21 @@ export const useFileUpload = () => {
       parentId?: string;
       folderPath: string;
     }) => {
+      console.log('Starting file upload:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        workflowStageId,
+        parentId,
+        folderPath
+      });
+
       // Generate unique file name to avoid conflicts
       const fileExtension = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
       const storagePath = `${workflowStageId}/${fileName}`;
+
+      console.log('Upload path:', storagePath);
 
       // Upload file to Supabase Storage
       const { data: storageData, error: storageError } = await supabase.storage
@@ -36,10 +47,14 @@ export const useFileUpload = () => {
         throw new Error(`Failed to upload file: ${storageError.message}`);
       }
 
+      console.log('Storage upload successful:', storageData);
+
       // Get public URL for the uploaded file
       const { data: publicUrlData } = supabase.storage
         .from('work-order-files')
         .getPublicUrl(storagePath);
+
+      console.log('Public URL generated:', publicUrlData.publicUrl);
 
       // Save file metadata to database
       const { data: dbData, error: dbError } = await supabase
@@ -67,6 +82,7 @@ export const useFileUpload = () => {
         throw new Error(`Failed to save file metadata: ${dbError.message}`);
       }
 
+      console.log('Database record created:', dbData);
       return dbData;
     },
     onSuccess: (data) => {

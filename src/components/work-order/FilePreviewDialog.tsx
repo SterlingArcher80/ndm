@@ -2,8 +2,11 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Download, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
+import { X, Download, ExternalLink, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { WorkOrderFile } from './types';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
 
 interface FilePreviewDialogProps {
   open: boolean;
@@ -14,6 +17,27 @@ interface FilePreviewDialogProps {
 const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const queryClient = useQueryClient();
+
+  const deleteFileMutation = useMutation({
+    mutationFn: async (fileId: string) => {
+      const { error } = await supabase
+        .from('work_order_items')
+        .delete()
+        .eq('id', fileId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+      toast.success('File record deleted');
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error('Failed to delete file:', error);
+      toast.error('Failed to delete file record');
+    }
+  });
 
   if (!file) return null;
 
@@ -78,33 +102,52 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
     }
   };
 
+  const handleDeleteFile = () => {
+    if (confirm(`Are you sure you want to delete the file record for "${file.name}"? This will remove it from the database but may not delete the actual file from storage.`)) {
+      deleteFileMutation.mutate(file.id);
+    }
+  };
+
   const renderPreview = () => {
     if (!fileUrl) {
       return (
         <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
           <div className="text-center max-w-md">
-            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600 mb-2 font-medium">File URL not available</p>
-            <p className="text-xs text-gray-500 mb-2">File ID: {file.id}</p>
-            <p className="text-xs text-gray-500 mb-4">
-              The file may not have been uploaded to storage properly or the storage bucket may not be accessible.
+            <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">File Upload Failed</h3>
+            <p className="text-gray-600 mb-4">
+              This file was not properly uploaded to storage. The database record exists but the file is missing.
             </p>
-            <div className="space-y-2 text-xs text-left bg-gray-50 p-3 rounded border">
-              <p><strong>Debug Info:</strong></p>
+            
+            <div className="space-y-2 text-xs text-left bg-gray-50 p-4 rounded border">
+              <p><strong>Debug Information:</strong></p>
               <p>• File name: {file.name}</p>
+              <p>• File ID: {file.id}</p>
               <p>• MIME type: {file.mime_type || 'Not set'}</p>
-              <p>• File path: {file.folderPath || 'Not set'}</p>
+              <p>• File path: {file.file_path || 'Not set'}</p>
               <p>• Storage URL: {fileUrl || 'Missing'}</p>
+              <p>• Workflow stage: {file.workflow_stage_id}</p>
             </div>
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline" 
-              size="sm"
-              className="mt-4"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Page
-            </Button>
+
+            <div className="flex gap-2 mt-4 justify-center">
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline" 
+                size="sm"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh Page
+              </Button>
+              <Button 
+                onClick={handleDeleteFile}
+                variant="destructive" 
+                size="sm"
+                disabled={deleteFileMutation.isPending}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Record
+              </Button>
+            </div>
           </div>
         </div>
       );
@@ -153,7 +196,6 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         );
 
       case 'word':
-        // For Word documents, we'll use Office Online viewer
         const wordViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
         return (
           <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
@@ -168,7 +210,6 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         );
 
       case 'excel':
-        // For Excel documents, we'll use Office Online viewer
         const excelViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
         return (
           <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">

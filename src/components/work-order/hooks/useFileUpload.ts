@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -33,17 +34,7 @@ export const useFileUpload = () => {
 
       console.log('Upload path:', storagePath);
 
-      // First, check if bucket exists and create if needed
-      const { data: buckets, error: bucketListError } = await supabase.storage.listBuckets();
-      
-      if (bucketListError) {
-        console.error('Error listing buckets:', bucketListError);
-      }
-
-      const bucketExists = buckets?.find(bucket => bucket.id === 'work-order-files');
-      console.log('Bucket exists:', bucketExists);
-
-      // Upload file to Supabase Storage
+      // Upload file to Supabase Storage first
       const { data: storageData, error: storageError } = await supabase.storage
         .from('work-order-files')
         .upload(storagePath, file, {
@@ -53,7 +44,7 @@ export const useFileUpload = () => {
 
       if (storageError) {
         console.error('Storage upload error:', storageError);
-        throw new Error(`Failed to upload file: ${storageError.message}`);
+        throw new Error(`Failed to upload file to storage: ${storageError.message}`);
       }
 
       console.log('Storage upload successful:', storageData);
@@ -66,18 +57,28 @@ export const useFileUpload = () => {
       const publicUrl = publicUrlData.publicUrl;
       console.log('Public URL generated:', publicUrl);
 
-      // Verify the URL is accessible
-      try {
-        const response = await fetch(publicUrl, { method: 'HEAD' });
-        console.log('URL verification response:', response.status);
-        if (!response.ok) {
-          console.warn('Generated URL may not be accessible:', response.status);
-        }
-      } catch (error) {
-        console.warn('Could not verify URL accessibility:', error);
+      // Validate that we have a proper URL
+      if (!publicUrl || !publicUrl.includes('supabase')) {
+        console.error('Invalid public URL generated:', publicUrl);
+        // Clean up uploaded file
+        await supabase.storage
+          .from('work-order-files')
+          .remove([storagePath]);
+        throw new Error('Failed to generate valid file URL');
       }
 
-      // Save file metadata to database
+      // Verify the URL structure is correct
+      const expectedUrlPattern = /https:\/\/[^\/]+\.supabase\.co\/storage\/v1\/object\/public\/work-order-files\/.+/;
+      if (!expectedUrlPattern.test(publicUrl)) {
+        console.error('URL does not match expected pattern:', publicUrl);
+        // Clean up uploaded file
+        await supabase.storage
+          .from('work-order-files')
+          .remove([storagePath]);
+        throw new Error('Generated URL has incorrect format');
+      }
+
+      // Save file metadata to database only after successful storage upload
       const { data: dbData, error: dbError } = await supabase
         .from('work_order_items')
         .insert({
@@ -89,7 +90,7 @@ export const useFileUpload = () => {
           file_size: `${Math.round(file.size / 1024)} KB`,
           file_type: getFileType(file.type),
           file_url: publicUrl,
-          mime_type: file.type
+          mime_type: file.type || 'application/octet-stream'
         })
         .select()
         .single();
@@ -103,7 +104,7 @@ export const useFileUpload = () => {
         throw new Error(`Failed to save file metadata: ${dbError.message}`);
       }
 
-      console.log('Database record created:', dbData);
+      console.log('Database record created successfully:', dbData);
       console.log('Final file_url in database:', dbData.file_url);
       
       return dbData;
@@ -134,11 +135,20 @@ export const useFileUpload = () => {
     );
 
     try {
-      await Promise.all(uploadPromises);
-      toast.success(`${files.length} files uploaded successfully`);
+      const results = await Promise.allSettled(uploadPromises);
+      const successful = results.filter(result => result.status === 'fulfilled').length;
+      const failed = results.filter(result => result.status === 'rejected').length;
+      
+      if (successful > 0) {
+        toast.success(`${successful} file(s) uploaded successfully`);
+      }
+      if (failed > 0) {
+        toast.error(`${failed} file(s) failed to upload`);
+        console.error('Failed uploads:', results.filter(result => result.status === 'rejected'));
+      }
     } catch (error) {
-      console.error('Failed to upload some files:', error);
-      toast.error('Some files failed to upload');
+      console.error('Failed to upload files:', error);
+      toast.error('Failed to upload files');
     }
   };
 
@@ -151,6 +161,7 @@ export const useFileUpload = () => {
 
 // Helper function to determine file type for display
 const getFileType = (mimeType: string): 'word' | 'excel' | 'pdf' | 'other' => {
+  if (!mimeType) return 'other';
   if (mimeType.includes('word') || mimeType.includes('document')) return 'word';
   if (mimeType.includes('sheet') || mimeType.includes('excel')) return 'excel';
   if (mimeType.includes('pdf')) return 'pdf';

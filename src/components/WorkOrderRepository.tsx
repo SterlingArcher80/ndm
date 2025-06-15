@@ -25,12 +25,35 @@ const WorkOrderRepository = () => {
   const { data: workOrderItems = [] } = useQuery({
     queryKey: ['work-order-items'],
     queryFn: async () => {
+      console.log('🔍 Fetching work order items from database...');
       const { data, error } = await supabase
         .from('work_order_items')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching work order items:', error);
+        throw error;
+      }
+      
+      console.log('📋 Raw data from database:', data);
+      
+      // Log each item to debug field mapping
+      data?.forEach((item, index) => {
+        console.log(`📄 Item ${index + 1}:`, {
+          id: item.id,
+          name: item.name,
+          type: item.type,
+          file_url: item.file_url,
+          mime_type: item.mime_type,
+          file_type: item.file_type,
+          file_size: item.file_size,
+          file_path: item.file_path,
+          workflow_stage_id: item.workflow_stage_id,
+          parent_id: item.parent_id
+        });
+      });
+      
       return data || [];
     }
   });

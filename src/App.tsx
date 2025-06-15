@@ -9,6 +9,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import InventorySystem from "./pages/InventorySystem";
+import ManageSettings from "./pages/ManageSettings";
 import AuthPage from "./components/auth/AuthPage";
 
 const App = () => {
@@ -34,6 +35,7 @@ const App = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/inventory" element={<InventorySystem />} />
+                <Route path="/settings" element={<ManageSettings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>

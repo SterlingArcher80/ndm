@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -34,6 +33,16 @@ export const useFileUpload = () => {
 
       console.log('Upload path:', storagePath);
 
+      // First, check if bucket exists and create if needed
+      const { data: buckets, error: bucketListError } = await supabase.storage.listBuckets();
+      
+      if (bucketListError) {
+        console.error('Error listing buckets:', bucketListError);
+      }
+
+      const bucketExists = buckets?.find(bucket => bucket.id === 'work-order-files');
+      console.log('Bucket exists:', bucketExists);
+
       // Upload file to Supabase Storage
       const { data: storageData, error: storageError } = await supabase.storage
         .from('work-order-files')
@@ -49,13 +58,24 @@ export const useFileUpload = () => {
 
       console.log('Storage upload successful:', storageData);
 
-      // Get public URL for the uploaded file - use the correct format
+      // Get public URL for the uploaded file
       const { data: publicUrlData } = supabase.storage
         .from('work-order-files')
         .getPublicUrl(storagePath);
 
       const publicUrl = publicUrlData.publicUrl;
       console.log('Public URL generated:', publicUrl);
+
+      // Verify the URL is accessible
+      try {
+        const response = await fetch(publicUrl, { method: 'HEAD' });
+        console.log('URL verification response:', response.status);
+        if (!response.ok) {
+          console.warn('Generated URL may not be accessible:', response.status);
+        }
+      } catch (error) {
+        console.warn('Could not verify URL accessibility:', error);
+      }
 
       // Save file metadata to database
       const { data: dbData, error: dbError } = await supabase
@@ -84,6 +104,8 @@ export const useFileUpload = () => {
       }
 
       console.log('Database record created:', dbData);
+      console.log('Final file_url in database:', dbData.file_url);
+      
       return dbData;
     },
     onSuccess: (data) => {

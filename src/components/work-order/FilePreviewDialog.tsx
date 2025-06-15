@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Download, ExternalLink, AlertCircle } from 'lucide-react';
+import { X, Download, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
 import { WorkOrderFile } from './types';
 
 interface FilePreviewDialogProps {
@@ -45,7 +46,8 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
     fileUrl: fileUrl,
     mimeType: file.mime_type,
     fileType: fileType,
-    fileId: file.id
+    fileId: file.id,
+    hasFileUrl: !!fileUrl
   });
 
   const handleLoad = () => {
@@ -80,26 +82,28 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
     if (!fileUrl) {
       return (
         <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
-          <div className="text-center">
+          <div className="text-center max-w-md">
             <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600 mb-2">File URL not available</p>
-            <p className="text-xs text-gray-500 mb-4">File ID: {file.id}</p>
-            <p className="text-xs text-gray-500">The file may not have been uploaded to storage properly.</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (hasError) {
-      return (
-        <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
-          <div className="text-center">
-            <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-2" />
-            <p className="text-gray-600 mb-2">Unable to preview this file</p>
-            <p className="text-xs text-gray-500 mb-4">URL: {fileUrl}</p>
-            <Button onClick={openInNewTab} variant="outline">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Open in New Tab
+            <p className="text-gray-600 mb-2 font-medium">File URL not available</p>
+            <p className="text-xs text-gray-500 mb-2">File ID: {file.id}</p>
+            <p className="text-xs text-gray-500 mb-4">
+              The file may not have been uploaded to storage properly or the storage bucket may not be accessible.
+            </p>
+            <div className="space-y-2 text-xs text-left bg-gray-50 p-3 rounded border">
+              <p><strong>Debug Info:</strong></p>
+              <p>• File name: {file.name}</p>
+              <p>• MIME type: {file.mime_type || 'Not set'}</p>
+              <p>• File path: {file.folderPath || 'Not set'}</p>
+              <p>• Storage URL: {fileUrl || 'Missing'}</p>
+            </div>
+            <Button 
+              onClick={() => window.location.reload()} 
+              variant="outline" 
+              size="sm"
+              className="mt-4"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh Page
             </Button>
           </div>
         </div>
@@ -226,7 +230,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         </DialogHeader>
         
         <div className="mt-4 overflow-auto">
-          {isLoading && (
+          {isLoading && fileUrl && (
             <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>

@@ -19,6 +19,8 @@ const WorkOrderRepository = () => {
     itemId: ''
   });
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   const { data: workOrderItems = [] } = useQuery({
     queryKey: ['work-order-items'],
@@ -39,8 +41,6 @@ const WorkOrderRepository = () => {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         selectedFolder={selectedFolder}
-        currentPath={currentPath}
-        folders={[]}
         setShowNewFolderDialog={setShowNewFolderDialog}
       />
       
@@ -70,8 +70,12 @@ const WorkOrderRepository = () => {
         setDeleteDialog={setDeleteDialog}
         showNewFolderDialog={showNewFolderDialog}
         setShowNewFolderDialog={setShowNewFolderDialog}
+        newFolderName={newFolderName}
+        setNewFolderName={setNewFolderName}
         selectedFolder={selectedFolder}
         currentPath={currentPath}
+        deleteConfirmation={deleteConfirmation}
+        setDeleteConfirmation={setDeleteConfirmation}
       />
     </div>
   );

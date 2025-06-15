@@ -57,15 +57,16 @@ export const useWorkOrderFolders = (workOrderItems: any[], searchQuery: string) 
       folder.files = buildNestedStructure(folder.files);
     });
 
-    // Apply search filter
+    // Apply search filter and return filtered folders
+    const filteredFolders = Array.from(foldersMap.values());
     if (searchQuery) {
-      foldersMap.forEach(folder => {
+      filteredFolders.forEach(folder => {
         folder.files = filterItems(folder.files, searchQuery);
         folder.count = countFiles(folder.files);
       });
     }
 
-    return Array.from(foldersMap.values());
+    return filteredFolders;
   }, [workOrderItems, searchQuery]);
 
   return { folders };
@@ -147,7 +148,7 @@ function filterItems(items: WorkOrderFile[], query: string): WorkOrderFile[] {
   
   items.forEach(item => {
     const matchesQuery = item.name.toLowerCase().includes(query.toLowerCase());
-    const filteredSubItems = item.subItems ? filterItems(item.subItems, query) : [];
+    const filteredSubItems = item.subItems ? filterItems(item.subItems as WorkOrderFile[], query) : [];
     
     if (matchesQuery || filteredSubItems.length > 0) {
       filtered.push({
@@ -166,7 +167,7 @@ function countFiles(items: WorkOrderFile[]): number {
       count++;
     }
     if (item.subItems) {
-      count += countFiles(item.subItems);
+      count += countFiles(item.subItems as WorkOrderFile[]);
     }
     return count;
   }, 0);

@@ -8,7 +8,7 @@ export interface WorkOrderFile {
   modifiedDate: string;
   status?: string;
   fileType?: 'word' | 'excel' | 'pdf' | 'other';
-  subItems?: (WorkOrderFile | WorkOrderFolder)[];
+  subItems?: WorkOrderFile[];
   folderPath?: string;
   workflow_stage_id: string;
   parent_id?: string;

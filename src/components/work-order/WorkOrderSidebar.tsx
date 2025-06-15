@@ -23,7 +23,7 @@ const WorkOrderSidebar = ({
   searchQuery,
   currentPath
 }: WorkOrderSidebarProps) => {
-  const { folders, filteredFolders } = useWorkOrderFolders(workOrderItems, searchQuery);
+  const { folders } = useWorkOrderFolders(workOrderItems, searchQuery);
 
   // Calculate folder counts for each workflow stage
   const folderCounts = useMemo(() => {
@@ -42,7 +42,7 @@ const WorkOrderSidebar = ({
       <div className="p-4 flex-1 overflow-y-auto">
         <h2 className="text-lg font-semibold mb-4 text-gray-300">Workflow Stages</h2>
         <div className="space-y-2">
-          {filteredFolders.map((folder) => {
+          {folders.map((folder) => {
             const folderCount = folderCounts[folder.id] || 0;
             return (
               <div

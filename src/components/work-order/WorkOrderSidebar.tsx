@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { WorkOrderFolder } from './types';
 import UploadArea from './UploadArea';
 import { useWorkOrderFolders } from './hooks/useWorkOrderFolders';
+import { useWorkflowStages } from './hooks/useWorkflowStages';
 
 interface WorkOrderSidebarProps {
   workOrderItems: any[];
@@ -23,7 +24,8 @@ const WorkOrderSidebar = ({
   searchQuery,
   currentPath
 }: WorkOrderSidebarProps) => {
-  const { folders } = useWorkOrderFolders(workOrderItems, searchQuery);
+  const { stages, loading: stagesLoading } = useWorkflowStages();
+  const { folders } = useWorkOrderFolders(workOrderItems, searchQuery, stages);
 
   // Calculate folder counts for each workflow stage
   const folderCounts = useMemo(() => {
@@ -36,6 +38,23 @@ const WorkOrderSidebar = ({
     
     return counts;
   }, [folders]);
+
+  if (stagesLoading) {
+    return (
+      <div className="w-80 border-r border-gray-800 bg-gray-950 flex flex-col">
+        <div className="p-4 flex-1 overflow-y-auto">
+          <h2 className="text-lg font-semibold mb-4 text-gray-300">Workflow Stages</h2>
+          <div className="space-y-2">
+            <div className="animate-pulse">
+              <div className="h-16 bg-gray-800 rounded-lg mb-2"></div>
+              <div className="h-16 bg-gray-800 rounded-lg mb-2"></div>
+              <div className="h-16 bg-gray-800 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-80 border-r border-gray-800 bg-gray-950 flex flex-col">

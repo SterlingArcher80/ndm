@@ -48,7 +48,7 @@ const Index = () => {
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Package className="h-6 w-6 text-blue-600" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Track Inventory</h3>
+            <h3 className="text-xl font-semibold mb-2">Inventory</h3>
             <p className="text-gray-600">
               Keep track of all your items with real-time quantity updates and low stock alerts
             </p>
@@ -58,7 +58,7 @@ const Index = () => {
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Package className="h-6 w-6 text-green-600" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Organize Categories</h3>
+            <h3 className="text-xl font-semibold mb-2">Work Orders</h3>
             <p className="text-gray-600">
               Categorize your items and organize them by locations for easy management
             </p>
@@ -68,13 +68,12 @@ const Index = () => {
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Package className="h-6 w-6 text-purple-600" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Analytics & Reports</h3>
+            <h3 className="text-xl font-semibold mb-2">Manufacturing</h3>
             <p className="text-gray-600">
               Get insights into your inventory with detailed analytics and reporting features
             </p>
           </div>
         </div>
-
       </div>
     </div>
   );

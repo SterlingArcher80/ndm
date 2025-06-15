@@ -3,61 +3,171 @@ import { useMemo } from 'react';
 import { WorkOrderFile, WorkOrderFolder } from '../types';
 
 export const useWorkOrderFolders = (workOrderItems: any[], searchQuery: string) => {
-  // Group items by workflow stage and calculate counts
-  const workflowFolders = useMemo(() => {
-    const grouped: Record<string, WorkOrderFile[]> = {
-      '1': [],
-      '2': [],
-      '3': [],
-      '4': [],
-      '5': [],
-      '6': [],
-      '7': [],
-    };
-
+  const folders = useMemo(() => {
+    const foldersMap = new Map<string, WorkOrderFolder>();
+    
+    // First pass: create folders
     workOrderItems.forEach(item => {
-      grouped[item.workflow_stage_id]?.push({
-        id: item.id,
-        name: item.name,
-        type: item.type as 'file' | 'folder',
-        size: item.file_size || undefined,
-        modifiedDate: new Date(item.updated_at).toLocaleDateString(),
-        fileType: item.file_type as any || undefined,
-        folderPath: item.file_path || undefined,
-        workflow_stage_id: item.workflow_stage_id,
-        parent_id: item.parent_id || undefined
-      });
+      const stageId = item.workflow_stage_id;
+      if (!foldersMap.has(stageId)) {
+        foldersMap.set(stageId, {
+          id: stageId,
+          name: getStageName(stageId),
+          count: 0,
+          color: getStageColor(stageId),
+          files: [],
+          folderPath: getStagePath(stageId)
+        });
+      }
     });
 
-    return grouped;
-  }, [workOrderItems]);
+    // Second pass: add items to folders with proper field mapping
+    workOrderItems.forEach(item => {
+      const stageId = item.workflow_stage_id;
+      const folder = foldersMap.get(stageId);
+      
+      if (folder) {
+        // Map database fields to component properties
+        const transformedItem: WorkOrderFile = {
+          id: item.id,
+          name: item.name,
+          type: item.type as 'file' | 'folder',
+          size: item.file_size || undefined,
+          file_size: item.file_size || undefined,
+          modifiedDate: new Date(item.created_at).toLocaleDateString(),
+          fileType: mapFileType(item.file_type),
+          folderPath: item.file_path,
+          workflow_stage_id: item.workflow_stage_id,
+          parent_id: item.parent_id,
+          file_url: item.file_url,
+          mime_type: item.mime_type,
+          file_path: item.file_path,
+          subItems: []
+        };
 
-  const folders: WorkOrderFolder[] = [
-    { id: '1', name: 'Open', count: workflowFolders['1']?.length || 0, color: 'bg-blue-600', files: workflowFolders['1'] || [], folderPath: 'uploads/Open' },
-    { id: '2', name: 'To be Invoiced', count: workflowFolders['2']?.length || 0, color: 'bg-orange-600', files: workflowFolders['2'] || [], folderPath: 'uploads/To be Invoiced' },
-    { id: '3', name: 'Invoiced', count: workflowFolders['3']?.length || 0, color: 'bg-green-600', files: workflowFolders['3'] || [], folderPath: 'uploads/Invoiced' },
-    { id: '4', name: 'To be Shipped', count: workflowFolders['4']?.length || 0, color: 'bg-purple-600', files: workflowFolders['4'] || [], folderPath: 'uploads/To be Shipped' },
-    { id: '5', name: 'Shipped', count: workflowFolders['5']?.length || 0, color: 'bg-indigo-600', files: workflowFolders['5'] || [], folderPath: 'uploads/Shipped' },
-    { id: '6', name: 'Dropship', count: workflowFolders['6']?.length || 0, color: 'bg-pink-600', files: workflowFolders['6'] || [], folderPath: 'uploads/Dropship' },
-    { id: '7', name: 'Customer History', count: workflowFolders['7']?.length || 0, color: 'bg-gray-600', files: workflowFolders['7'] || [], folderPath: 'uploads/Customer History' },
-  ];
+        folder.files.push(transformedItem);
+        if (item.type === 'file') {
+          folder.count++;
+        }
+      }
+    });
 
-  // Filter folders based on search query
-  const filteredFolders = useMemo(() => {
-    if (!searchQuery.trim()) return folders;
-    
-    return folders.map(folder => ({
-      ...folder,
-      files: folder.files.filter(file => 
-        file.type === 'folder' && 
-        file.name.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-      count: folder.files.filter(file => 
-        file.type === 'folder' && 
-        file.name.toLowerCase().includes(searchQuery.toLowerCase())
-      ).length
-    }));
-  }, [folders, searchQuery]);
+    // Build nested structure for folders and files
+    foldersMap.forEach(folder => {
+      folder.files = buildNestedStructure(folder.files);
+    });
 
-  return { folders, filteredFolders, workflowFolders };
+    // Apply search filter
+    if (searchQuery) {
+      foldersMap.forEach(folder => {
+        folder.files = filterItems(folder.files, searchQuery);
+        folder.count = countFiles(folder.files);
+      });
+    }
+
+    return Array.from(foldersMap.values());
+  }, [workOrderItems, searchQuery]);
+
+  return { folders };
 };
+
+function getStageName(stageId: string): string {
+  const stageNames: { [key: string]: string } = {
+    '1': 'Open',
+    '2': 'To be Invoiced',
+    '3': 'Shipped',
+    '4': 'Invoiced',
+    '5': 'Customer History',
+    '6': 'Dropship'
+  };
+  return stageNames[stageId] || `Stage ${stageId}`;
+}
+
+function getStageColor(stageId: string): string {
+  const stageColors: { [key: string]: string } = {
+    '1': 'bg-blue-500',
+    '2': 'bg-yellow-500',
+    '3': 'bg-green-500',
+    '4': 'bg-purple-500',
+    '5': 'bg-gray-500',
+    '6': 'bg-red-500'
+  };
+  return stageColors[stageId] || 'bg-gray-500';
+}
+
+function getStagePath(stageId: string): string {
+  const stagePaths: { [key: string]: string } = {
+    '1': 'uploads/Open',
+    '2': 'uploads/To be Invoiced',
+    '3': 'uploads/Shipped',
+    '4': 'uploads/Invoiced',
+    '5': 'uploads/Customer History',
+    '6': 'uploads/Dropship'
+  };
+  return stagePaths[stageId] || `uploads/stage-${stageId}`;
+}
+
+function mapFileType(fileType: string | null): 'word' | 'excel' | 'pdf' | 'other' {
+  if (!fileType) return 'other';
+  switch (fileType) {
+    case 'word': return 'word';
+    case 'excel': return 'excel';
+    case 'pdf': return 'pdf';
+    default: return 'other';
+  }
+}
+
+function buildNestedStructure(items: WorkOrderFile[]): WorkOrderFile[] {
+  const itemMap = new Map<string, WorkOrderFile>();
+  const rootItems: WorkOrderFile[] = [];
+
+  // First pass: create map of all items
+  items.forEach(item => {
+    itemMap.set(item.id, { ...item, subItems: [] });
+  });
+
+  // Second pass: build hierarchy
+  items.forEach(item => {
+    const mappedItem = itemMap.get(item.id)!;
+    
+    if (item.parent_id && itemMap.has(item.parent_id)) {
+      const parent = itemMap.get(item.parent_id)!;
+      if (!parent.subItems) parent.subItems = [];
+      parent.subItems.push(mappedItem);
+    } else {
+      rootItems.push(mappedItem);
+    }
+  });
+
+  return rootItems;
+}
+
+function filterItems(items: WorkOrderFile[], query: string): WorkOrderFile[] {
+  const filtered: WorkOrderFile[] = [];
+  
+  items.forEach(item => {
+    const matchesQuery = item.name.toLowerCase().includes(query.toLowerCase());
+    const filteredSubItems = item.subItems ? filterItems(item.subItems, query) : [];
+    
+    if (matchesQuery || filteredSubItems.length > 0) {
+      filtered.push({
+        ...item,
+        subItems: filteredSubItems
+      });
+    }
+  });
+  
+  return filtered;
+}
+
+function countFiles(items: WorkOrderFile[]): number {
+  return items.reduce((count, item) => {
+    if (item.type === 'file') {
+      count++;
+    }
+    if (item.subItems) {
+      count += countFiles(item.subItems);
+    }
+    return count;
+  }, 0);
+}

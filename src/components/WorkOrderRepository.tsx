@@ -7,7 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { PublicClientApplication } from '@azure/msal-browser';
 import { toast } from '@/components/ui/sonner';
 
 interface WorkOrderFile {
@@ -19,6 +19,7 @@ interface WorkOrderFile {
   status?: string;
   fileType?: 'word' | 'excel' | 'pdf' | 'other';
   subItems?: (WorkOrderFile | WorkOrderFolder)[];
+  folderPath?: string; // Added to track the actual folder path
 }
 
 interface WorkOrderFolder {
@@ -27,6 +28,7 @@ interface WorkOrderFolder {
   count: number;
   color: string;
   files: WorkOrderFile[];
+  folderPath: string; // Added to track the actual folder path
 }
 
 // MSAL configuration - You'll need to set your actual client and tenant IDs
@@ -67,9 +69,10 @@ const WorkOrderRepository = () => {
         name: 'Customer ABC - Project 001', 
         type: 'folder' as const, 
         modifiedDate: '2024-06-10',
+        folderPath: 'uploads/Open/Customer ABC - Project 001',
         subItems: [
-          { id: 'f1-1', name: 'Drawings', type: 'folder' as const, modifiedDate: '2024-06-10' },
-          { id: 'f1-2', name: 'Specifications', type: 'folder' as const, modifiedDate: '2024-06-09' },
+          { id: 'f1-1', name: 'Drawings', type: 'folder' as const, modifiedDate: '2024-06-10', folderPath: 'uploads/Open/Customer ABC - Project 001/Drawings' },
+          { id: 'f1-2', name: 'Specifications', type: 'folder' as const, modifiedDate: '2024-06-09', folderPath: 'uploads/Open/Customer ABC - Project 001/Specifications' },
           { id: 'f1-3', name: 'Work Order.docx', type: 'file' as const, size: '2.3 MB', modifiedDate: '2024-06-10' },
           { id: 'f1-4', name: 'Quote.xlsx', type: 'file' as const, size: '1.1 MB', modifiedDate: '2024-06-09' }
         ]
@@ -79,8 +82,9 @@ const WorkOrderRepository = () => {
         name: 'Customer XYZ - Repair Job', 
         type: 'folder' as const, 
         modifiedDate: '2024-06-09',
+        folderPath: 'uploads/Open/Customer XYZ - Repair Job',
         subItems: [
-          { id: 'f2-1', name: 'Photos', type: 'folder' as const, modifiedDate: '2024-06-09' },
+          { id: 'f2-1', name: 'Photos', type: 'folder' as const, modifiedDate: '2024-06-09', folderPath: 'uploads/Open/Customer XYZ - Repair Job/Photos' },
           { id: 'f2-2', name: 'Repair Instructions.pdf', type: 'file' as const, size: '890 KB', modifiedDate: '2024-06-09' }
         ]
       },
@@ -91,48 +95,48 @@ const WorkOrderRepository = () => {
         name: 'Completed Job - Customer DEF', 
         type: 'folder' as const, 
         modifiedDate: '2024-06-08',
+        folderPath: 'uploads/To be Invoiced/Completed Job - Customer DEF',
         subItems: [
           { id: 'f3-1', name: 'Final Report.docx', type: 'file' as const, size: '3.2 MB', modifiedDate: '2024-06-08' },
           { id: 'f3-2', name: 'Time Tracking.xlsx', type: 'file' as const, size: '856 KB', modifiedDate: '2024-06-08' }
         ]
       },
-      { id: 'f4', name: 'Rush Order - Customer GHI', type: 'folder' as const, modifiedDate: '2024-06-07' },
-      { id: 'f5', name: 'Standard Service - Customer JKL', type: 'folder' as const, modifiedDate: '2024-06-06' },
+      { id: 'f4', name: 'Rush Order - Customer GHI', type: 'folder' as const, modifiedDate: '2024-06-07', folderPath: 'uploads/To be Invoiced/Rush Order - Customer GHI' },
+      { id: 'f5', name: 'Standard Service - Customer JKL', type: 'folder' as const, modifiedDate: '2024-06-06', folderPath: 'uploads/To be Invoiced/Standard Service - Customer JKL' },
     ],
     '3': [
-      { id: 'f6', name: 'Invoice Sent - Customer MNO', type: 'folder' as const, modifiedDate: '2024-06-05' },
-      { id: 'f7', name: 'Payment Received - Customer PQR', type: 'folder' as const, modifiedDate: '2024-06-04' },
+      { id: 'f6', name: 'Invoice Sent - Customer MNO', type: 'folder' as const, modifiedDate: '2024-06-05', folderPath: 'uploads/Invoiced/Invoice Sent - Customer MNO' },
+      { id: 'f7', name: 'Payment Received - Customer PQR', type: 'folder' as const, modifiedDate: '2024-06-04', folderPath: 'uploads/Invoiced/Payment Received - Customer PQR' },
     ],
     '4': [
-      { id: 'f8', name: 'Ready to Ship - Customer STU', type: 'folder' as const, modifiedDate: '2024-06-03' },
+      { id: 'f8', name: 'Ready to Ship - Customer STU', type: 'folder' as const, modifiedDate: '2024-06-03', folderPath: 'uploads/To be Shipped/Ready to Ship - Customer STU' },
     ],
     '5': [
-      { id: 'f9', name: 'Shipped - Customer VWX', type: 'folder' as const, modifiedDate: '2024-06-02' },
-      { id: 'f10', name: 'Delivered - Customer YZA', type: 'folder' as const, modifiedDate: '2024-06-01' },
-      { id: 'f11', name: 'Completed - Customer BCD', type: 'folder' as const, modifiedDate: '2024-05-31' },
+      { id: 'f9', name: 'Shipped - Customer VWX', type: 'folder' as const, modifiedDate: '2024-06-02', folderPath: 'uploads/Shipped/Shipped - Customer VWX' },
+      { id: 'f10', name: 'Delivered - Customer YZA', type: 'folder' as const, modifiedDate: '2024-06-01', folderPath: 'uploads/Shipped/Delivered - Customer YZA' },
+      { id: 'f11', name: 'Completed - Customer BCD', type: 'folder' as const, modifiedDate: '2024-05-31', folderPath: 'uploads/Shipped/Completed - Customer BCD' },
     ],
     '6': [
-      { id: 'f12', name: 'Dropship Order - Vendor EFG', type: 'folder' as const, modifiedDate: '2024-05-30' },
+      { id: 'f12', name: 'Dropship Order - Vendor EFG', type: 'folder' as const, modifiedDate: '2024-05-30', folderPath: 'uploads/Dropship/Dropship Order - Vendor EFG' },
     ],
     '7': [
-      { id: 'f13', name: 'Customer HIJ - Historical Records', type: 'folder' as const, modifiedDate: '2024-05-29' },
-      { id: 'f14', name: 'Customer KLM - Past Projects', type: 'folder' as const, modifiedDate: '2024-05-28' },
-      { id: 'f15', name: 'Customer NOP - Archive', type: 'folder' as const, modifiedDate: '2024-05-27' },
-      { id: 'f16', name: 'Customer QRS - Old Jobs', type: 'folder' as const, modifiedDate: '2024-05-26' },
+      { id: 'f13', name: 'Customer HIJ - Historical Records', type: 'folder' as const, modifiedDate: '2024-05-29', folderPath: 'uploads/Customer History/Customer HIJ - Historical Records' },
+      { id: 'f14', name: 'Customer KLM - Past Projects', type: 'folder' as const, modifiedDate: '2024-05-28', folderPath: 'uploads/Customer History/Customer KLM - Past Projects' },
+      { id: 'f15', name: 'Customer NOP - Archive', type: 'folder' as const, modifiedDate: '2024-05-27', folderPath: 'uploads/Customer History/Customer NOP - Archive' },
+      { id: 'f16', name: 'Customer QRS - Old Jobs', type: 'folder' as const, modifiedDate: '2024-05-26', folderPath: 'uploads/Customer History/Customer QRS - Old Jobs' },
     ],
   });
 
   const folders: WorkOrderFolder[] = [
-    { id: '1', name: 'Open', count: workflowFolders['1']?.length || 0, color: 'bg-blue-600', files: workflowFolders['1'] || [] },
-    { id: '2', name: 'To be Invoiced', count: workflowFolders['2']?.length || 0, color: 'bg-orange-600', files: workflowFolders['2'] || [] },
-    { id: '3', name: 'Invoiced', count: workflowFolders['3']?.length || 0, color: 'bg-green-600', files: workflowFolders['3'] || [] },
-    { id: '4', name: 'To be Shipped', count: workflowFolders['4']?.length || 0, color: 'bg-purple-600', files: workflowFolders['4'] || [] },
-    { id: '5', name: 'Shipped', count: workflowFolders['5']?.length || 0, color: 'bg-indigo-600', files: workflowFolders['5'] || [] },
-    { id: '6', name: 'Dropship', count: workflowFolders['6']?.length || 0, color: 'bg-pink-600', files: workflowFolders['6'] || [] },
-    { id: '7', name: 'Customer History', count: workflowFolders['7']?.length || 0, color: 'bg-gray-600', files: workflowFolders['7'] || [] },
+    { id: '1', name: 'Open', count: workflowFolders['1']?.length || 0, color: 'bg-blue-600', files: workflowFolders['1'] || [], folderPath: 'uploads/Open' },
+    { id: '2', name: 'To be Invoiced', count: workflowFolders['2']?.length || 0, color: 'bg-orange-600', files: workflowFolders['2'] || [], folderPath: 'uploads/To be Invoiced' },
+    { id: '3', name: 'Invoiced', count: workflowFolders['3']?.length || 0, color: 'bg-green-600', files: workflowFolders['3'] || [], folderPath: 'uploads/Invoiced' },
+    { id: '4', name: 'To be Shipped', count: workflowFolders['4']?.length || 0, color: 'bg-purple-600', files: workflowFolders['4'] || [], folderPath: 'uploads/To be Shipped' },
+    { id: '5', name: 'Shipped', count: workflowFolders['5']?.length || 0, color: 'bg-indigo-600', files: workflowFolders['5'] || [], folderPath: 'uploads/Shipped' },
+    { id: '6', name: 'Dropship', count: workflowFolders['6']?.length || 0, color: 'bg-pink-600', files: workflowFolders['6'] || [], folderPath: 'uploads/Dropship' },
+    { id: '7', name: 'Customer History', count: workflowFolders['7']?.length || 0, color: 'bg-gray-600', files: workflowFolders['7'] || [], folderPath: 'uploads/Customer History' },
   ];
 
-  // Get current folder contents based on path
   const getCurrentFolderContents = () => {
     if (!selectedFolder) return [];
     
@@ -306,8 +310,9 @@ const WorkOrderRepository = () => {
     }
 
     const files = Array.from(e.dataTransfer.files);
-    console.log(`Uploading ${files.length} files to workflow stage: ${selectedFolder}`);
-    // Here you would implement the actual upload logic
+    const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
+    console.log(`Uploading ${files.length} files to: ${selectedWorkflowFolder?.folderPath}`);
+    // Here you would implement the actual upload logic to the specific folder path
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -319,8 +324,9 @@ const WorkOrderRepository = () => {
 
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      console.log(`Uploading ${files.length} files to workflow stage: ${selectedFolder}`);
-      // Here you would implement the actual upload logic
+      const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
+      console.log(`Uploading ${files.length} files to: ${selectedWorkflowFolder?.folderPath}`);
+      // Here you would implement the actual upload logic to the specific folder path
     }
   };
 
@@ -553,6 +559,7 @@ const WorkOrderRepository = () => {
                   }}
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, folder.id)}
+                  title={`Upload to: ${folder.folderPath}`}
                 >
                   <div className={`w-3 h-3 rounded-full ${folder.color} mr-3`}></div>
                   <FolderOpen className="h-5 w-5 text-gray-400 mr-3" />
@@ -600,7 +607,7 @@ const WorkOrderRepository = () => {
                   Drop files here
                 </p>
                 <p className="text-xs text-gray-500">
-                  {selectedFolder ? `→ ${folders.find(f => f.id === selectedFolder)?.name}` : 'Select a stage first'}
+                  {selectedFolder ? `→ ${folders.find(f => f.id === selectedFolder)?.folderPath}` : 'Select a stage first'}
                 </p>
               </div>
             </Card>
@@ -697,6 +704,11 @@ const WorkOrderRepository = () => {
                             <p className="text-xs text-gray-400 mt-1">
                               {item.size && `${item.size} • `}Modified {item.modifiedDate}
                             </p>
+                            {item.folderPath && (
+                              <p className="text-xs text-gray-500 mt-1" title={item.folderPath}>
+                                Path: {item.folderPath}
+                              </p>
+                            )}
                           </div>
                         </div>
                         {item.type === 'file' ? (

@@ -11,17 +11,17 @@ import NotFound from "./pages/NotFound";
 import InventorySystem from "./pages/InventorySystem";
 import AuthPage from "./components/auth/AuthPage";
 
-// Create QueryClient with proper configuration
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-});
-
 const App = () => {
+  // Create QueryClient inside the component to ensure React context is available
+  const queryClient = React.useMemo(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      },
+    },
+  }), []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

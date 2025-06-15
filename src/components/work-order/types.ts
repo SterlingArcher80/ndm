@@ -4,6 +4,7 @@ export interface WorkOrderFile {
   name: string;
   type: 'file' | 'folder';
   size?: string;
+  file_size?: string;
   modifiedDate: string;
   status?: string;
   fileType?: 'word' | 'excel' | 'pdf' | 'other';

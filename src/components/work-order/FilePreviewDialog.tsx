@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -222,7 +221,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
             </div>
           </div>
           <DialogDescription className="text-sm text-gray-500">
-            {file.file_size && `${file.file_size} • `}Modified {file.modifiedDate}
+            {(file.file_size || file.size) && `${file.file_size || file.size} • `}Modified {file.modifiedDate}
           </DialogDescription>
         </DialogHeader>
         

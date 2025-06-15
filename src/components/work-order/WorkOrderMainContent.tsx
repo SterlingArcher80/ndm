@@ -45,8 +45,8 @@ const WorkOrderMainContent = ({
   const currentContents = getCurrentFolderContents();
   const breadcrumbPath = getBreadcrumbPath();
 
-  const handleMoveFile = (file: WorkOrderFile) => {
-    setMoveDialog({ open: true, item: file });
+  const handleMoveItem = (item: WorkOrderFile) => {
+    setMoveDialog({ open: true, item });
   };
 
   return (
@@ -78,7 +78,8 @@ const WorkOrderMainContent = ({
                 onFolderClick={navigateToFolder}
                 onDeleteFolder={setDeleteDialog}
                 onDeleteFile={setDeleteDialog}
-                onMoveFile={handleMoveFile}
+                onMoveFile={handleMoveItem}
+                onMoveFolder={handleMoveItem}
               />
             ) : (
               <WorkOrderEmptyState 

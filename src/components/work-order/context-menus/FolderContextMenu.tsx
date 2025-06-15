@@ -9,17 +9,22 @@ import { toast } from '@/components/ui/sonner';
 interface FolderContextMenuProps {
   folder: WorkOrderFile;
   onDelete: (dialog: { open: boolean; itemName: string; itemId: string }) => void;
+  onMove?: (folder: WorkOrderFile) => void;
 }
 
-const FolderContextMenu = ({ folder, onDelete }: FolderContextMenuProps) => {
+const FolderContextMenu = ({ folder, onDelete, onMove }: FolderContextMenuProps) => {
   const handleRename = () => {
     console.log(`Renaming folder: ${folder.id}`);
     toast.info("Rename functionality coming soon");
   };
 
   const handleMove = () => {
-    console.log(`Moving folder: ${folder.id}`);
-    toast.info("Move functionality coming soon");
+    if (onMove) {
+      onMove(folder);
+    } else {
+      console.log(`Moving folder: ${folder.id}`);
+      toast.info("Move functionality coming soon");
+    }
   };
 
   const handleDelete = () => {
@@ -47,7 +52,10 @@ const FolderContextMenu = ({ folder, onDelete }: FolderContextMenuProps) => {
         </DropdownMenuItem>
         <DropdownMenuItem 
           className="text-gray-300 hover:bg-gray-700"
-          onClick={handleMove}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleMove();
+          }}
         >
           <Move className="mr-2 h-4 w-4" />
           Move to...

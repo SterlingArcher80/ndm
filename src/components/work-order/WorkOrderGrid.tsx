@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FolderOpen, FileText } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -15,6 +14,7 @@ interface WorkOrderGridProps {
   onDeleteFolder: (dialog: { open: boolean; itemName: string; itemId: string }) => void;
   onDeleteFile: (dialog: { open: boolean; itemName: string; itemId: string }) => void;
   onMoveFile: (file: WorkOrderFile) => void;
+  onMoveFolder?: (folder: WorkOrderFile) => void;
 }
 
 const WorkOrderGrid = ({ 
@@ -22,7 +22,8 @@ const WorkOrderGrid = ({
   onFolderClick, 
   onDeleteFolder, 
   onDeleteFile, 
-  onMoveFile 
+  onMoveFile,
+  onMoveFolder
 }: WorkOrderGridProps) => {
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -126,7 +127,11 @@ const WorkOrderGrid = ({
                   onMove={onMoveFile}
                 />
               ) : (
-                <FolderContextMenu folder={item} onDelete={onDeleteFolder} />
+                <FolderContextMenu 
+                  folder={item} 
+                  onDelete={onDeleteFolder}
+                  onMove={onMoveFolder}
+                />
               )}
             </div>
           </div>

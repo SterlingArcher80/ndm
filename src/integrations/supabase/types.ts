@@ -141,6 +141,53 @@ export type Database = {
         }
         Relationships: []
       }
+      work_order_items: {
+        Row: {
+          created_at: string
+          file_path: string | null
+          file_size: string | null
+          file_type: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          type: string
+          updated_at: string
+          workflow_stage_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_path?: string | null
+          file_size?: string | null
+          file_type?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          type: string
+          updated_at?: string
+          workflow_stage_id: string
+        }
+        Update: {
+          created_at?: string
+          file_path?: string | null
+          file_size?: string | null
+          file_type?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          type?: string
+          updated_at?: string
+          workflow_stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_items_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

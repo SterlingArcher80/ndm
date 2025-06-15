@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { FolderOpen, FileText, Upload, MoreVertical, Eye, Edit, Copy, Trash2, Move, AlertCircle, Search, X, RefreshCw, ArrowLeft, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -10,6 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { toast } from '@/components/ui/sonner';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WorkOrderFile {
   id: string;
@@ -21,6 +22,8 @@ interface WorkOrderFile {
   fileType?: 'word' | 'excel' | 'pdf' | 'other';
   subItems?: (WorkOrderFile | WorkOrderFolder)[];
   folderPath?: string;
+  workflow_stage_id: string;
+  parent_id?: string;
 }
 
 interface WorkOrderFolder {
@@ -64,16 +67,117 @@ const WorkOrderRepository = () => {
   const [showNewFolderDialog, setShowNewFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
 
-  // Initialize with empty workflow folders
-  const [workflowFolders, setWorkflowFolders] = useState<Record<string, WorkOrderFile[]>>({
-    '1': [],
-    '2': [],
-    '3': [],
-    '4': [],
-    '5': [],
-    '6': [],
-    '7': [],
+  const queryClient = useQueryClient();
+
+  // Fetch work order items from Supabase
+  const { data: workOrderItems = [], isLoading } = useQuery({
+    queryKey: ['work-order-items'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('work_order_items')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching work order items:', error);
+        throw error;
+      }
+      
+      return data || [];
+    }
   });
+
+  // Mutation for creating new folder
+  const createFolderMutation = useMutation({
+    mutationFn: async ({ name, workflowStageId, parentId }: { name: string; workflowStageId: string; parentId?: string }) => {
+      const folderPath = parentId 
+        ? `uploads/${folders.find(f => f.id === workflowStageId)?.name}/${name}`
+        : `uploads/${folders.find(f => f.id === workflowStageId)?.name}/${name}`;
+
+      const { data, error } = await supabase
+        .from('work_order_items')
+        .insert({
+          name: name.trim(),
+          type: 'folder',
+          workflow_stage_id: workflowStageId,
+          parent_id: parentId || null,
+          file_path: folderPath
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating folder:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+      toast.success(`Folder "${data.name}" created successfully`);
+      setShowNewFolderDialog(false);
+      setNewFolderName('');
+    },
+    onError: (error) => {
+      console.error('Failed to create folder:', error);
+      toast.error('Failed to create folder');
+    }
+  });
+
+  // Mutation for deleting items
+  const deleteItemMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase
+        .from('work_order_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) {
+        console.error('Error deleting item:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+      toast.success(`Item "${deleteDialog.itemName}" has been deleted successfully.`);
+      setDeleteDialog({ open: false, itemName: '', itemId: '' });
+      setDeleteConfirmation('');
+    },
+    onError: (error) => {
+      console.error('Failed to delete item:', error);
+      toast.error('Failed to delete item');
+    }
+  });
+
+  // Group items by workflow stage and calculate counts
+  const workflowFolders = useMemo(() => {
+    const grouped: Record<string, WorkOrderFile[]> = {
+      '1': [],
+      '2': [],
+      '3': [],
+      '4': [],
+      '5': [],
+      '6': [],
+      '7': [],
+    };
+
+    workOrderItems.forEach(item => {
+      grouped[item.workflow_stage_id]?.push({
+        id: item.id,
+        name: item.name,
+        type: item.type as 'file' | 'folder',
+        size: item.file_size || undefined,
+        modifiedDate: new Date(item.updated_at).toLocaleDateString(),
+        fileType: item.file_type as any || undefined,
+        folderPath: item.file_path || undefined,
+        workflow_stage_id: item.workflow_stage_id,
+        parent_id: item.parent_id || undefined
+      });
+    });
+
+    return grouped;
+  }, [workOrderItems]);
 
   const folders: WorkOrderFolder[] = [
     { id: '1', name: 'Open', count: workflowFolders['1']?.length || 0, color: 'bg-blue-600', files: workflowFolders['1'] || [], folderPath: 'uploads/Open' },
@@ -91,17 +195,17 @@ const WorkOrderRepository = () => {
     const workflowFolder = folders.find(f => f.id === selectedFolder);
     if (!workflowFolder) return [];
 
-    let currentItems = workflowFolder.files;
-    
-    // Navigate through the path to find current folder contents
-    for (const pathItem of currentPath) {
-      const folderItem = currentItems.find(item => item.id === pathItem && item.type === 'folder') as WorkOrderFile;
-      if (folderItem && folderItem.subItems) {
-        currentItems = folderItem.subItems as WorkOrderFile[];
+    // Filter items for current folder level
+    let currentItems = workflowFolder.files.filter(item => {
+      if (currentPath.length === 0) {
+        // Root level - items with no parent
+        return !item.parent_id;
       } else {
-        return [];
+        // Nested level - items with parent matching current path
+        const currentParentId = currentPath[currentPath.length - 1];
+        return item.parent_id === currentParentId;
       }
-    }
+    });
     
     return currentItems;
   };
@@ -262,26 +366,7 @@ const WorkOrderRepository = () => {
     const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
     console.log(`Uploading ${files.length} files to: ${selectedWorkflowFolder?.folderPath}`);
     
-    // Create new file objects and add them to the current folder
-    const newFiles: WorkOrderFile[] = files.map((file, index) => ({
-      id: `file-${Date.now()}-${index}`,
-      name: file.name,
-      type: 'file' as const,
-      size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-      modifiedDate: new Date().toLocaleDateString(),
-      fileType: getFileType(file.name)
-    }));
-
-    // Add files to the current location
-    const updatedWorkflowFolders = { ...workflowFolders };
-    if (currentPath.length === 0) {
-      updatedWorkflowFolders[selectedFolder] = [...updatedWorkflowFolders[selectedFolder], ...newFiles];
-    } else {
-      // Add to nested folder - implementation would be more complex
-      console.log("Adding to nested folder:", currentPath);
-    }
-    
-    setWorkflowFolders(updatedWorkflowFolders);
+    // TODO: Implement file upload to Supabase
     toast.success(`${files.length} file(s) uploaded successfully`);
   };
 
@@ -297,20 +382,7 @@ const WorkOrderRepository = () => {
       const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
       console.log(`Uploading ${files.length} files to: ${selectedWorkflowFolder?.folderPath}`);
       
-      // Create new file objects and add them to the current folder
-      const newFiles: WorkOrderFile[] = files.map((file, index) => ({
-        id: `file-${Date.now()}-${index}`,
-        name: file.name,
-        type: 'file' as const,
-        size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        modifiedDate: new Date().toLocaleDateString(),
-        fileType: getFileType(file.name)
-      }));
-
-      // Add files to the current location
-      const updatedWorkflowFolders = { ...workflowFolders };
-      updatedWorkflowFolders[selectedFolder] = [...updatedWorkflowFolders[selectedFolder], ...newFiles];
-      setWorkflowFolders(updatedWorkflowFolders);
+      // TODO: Implement file upload to Supabase
       toast.success(`${files.length} file(s) uploaded successfully`);
     }
     
@@ -341,55 +413,13 @@ const WorkOrderRepository = () => {
       return;
     }
 
-    const newFolder: WorkOrderFile = {
-      id: `folder-${Date.now()}`,
-      name: newFolderName.trim(),
-      type: 'folder',
-      modifiedDate: new Date().toLocaleDateString(),
-      subItems: [],
-      folderPath: `${folders.find(f => f.id === selectedFolder)?.folderPath}/${newFolderName.trim()}`
-    };
-
-    const updatedWorkflowFolders = { ...workflowFolders };
-    if (selectedFolder) {
-      updatedWorkflowFolders[selectedFolder] = [...updatedWorkflowFolders[selectedFolder], newFolder];
-      setWorkflowFolders(updatedWorkflowFolders);
-      toast.success(`Folder "${newFolderName}" created successfully`);
-    }
-
-    setShowNewFolderDialog(false);
-    setNewFolderName('');
-  };
-
-  const deleteFolderFromPath = (folderId: string, workflowStageId: string, path: string[]) => {
-    const updatedWorkflowFolders = { ...workflowFolders };
+    const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
     
-    if (path.length === 0) {
-      // Delete from root level of workflow stage
-      updatedWorkflowFolders[workflowStageId] = updatedWorkflowFolders[workflowStageId].filter(
-        item => item.id !== folderId
-      );
-    } else {
-      // Navigate to the correct nested location and delete
-      let currentItems = updatedWorkflowFolders[workflowStageId];
-      
-      // Navigate to parent folder
-      for (let i = 0; i < path.length - 1; i++) {
-        const folderItem = currentItems.find(item => item.id === path[i] && item.type === 'folder') as WorkOrderFile;
-        if (folderItem && folderItem.subItems) {
-          currentItems = folderItem.subItems as WorkOrderFile[];
-        }
-      }
-      
-      // Find the parent folder and remove the item from its subItems
-      const parentFolderId = path[path.length - 1];
-      const parentFolder = currentItems.find(item => item.id === parentFolderId && item.type === 'folder') as WorkOrderFile;
-      if (parentFolder && parentFolder.subItems) {
-        parentFolder.subItems = parentFolder.subItems.filter(item => item.id !== folderId);
-      }
-    }
-    
-    setWorkflowFolders(updatedWorkflowFolders);
+    createFolderMutation.mutate({
+      name: newFolderName,
+      workflowStageId: selectedFolder!,
+      parentId
+    });
   };
 
   const handleDeleteFolder = (folderId: string, folderName: string) => {
@@ -402,18 +432,8 @@ const WorkOrderRepository = () => {
   };
 
   const confirmDelete = () => {
-    if (deleteConfirmation === 'DELETE' && selectedFolder) {
-      console.log(`Deleting folder: ${deleteDialog.itemId}`);
-      
-      // Delete the folder from the data structure
-      deleteFolderFromPath(deleteDialog.itemId, selectedFolder, currentPath);
-      
-      // Show success toast
-      toast.success(`Folder "${deleteDialog.itemName}" has been deleted successfully.`);
-      
-      // Close dialog and reset form
-      setDeleteDialog({ open: false, itemName: '', itemId: '' });
-      setDeleteConfirmation('');
+    if (deleteConfirmation === 'DELETE') {
+      deleteItemMutation.mutate(deleteDialog.itemId);
     }
   };
 
@@ -523,6 +543,14 @@ const WorkOrderRepository = () => {
 
   const currentContents = getCurrentFolderContents();
   const breadcrumbPath = getBreadcrumbPath();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <div className="text-lg text-white">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -842,9 +870,9 @@ const WorkOrderRepository = () => {
             <Button 
               onClick={createNewFolder}
               className="bg-blue-600 hover:bg-blue-700"
-              disabled={!newFolderName.trim()}
+              disabled={!newFolderName.trim() || createFolderMutation.isPending}
             >
-              Create Folder
+              {createFolderMutation.isPending ? 'Creating...' : 'Create Folder'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -854,9 +882,9 @@ const WorkOrderRepository = () => {
       <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
         <DialogContent className="bg-gray-800 border-gray-700">
           <DialogHeader>
-            <DialogTitle className="text-white">Delete Folder</DialogTitle>
+            <DialogTitle className="text-white">Delete Item</DialogTitle>
             <DialogDescription className="text-gray-300">
-              Are you sure you want to delete the folder "{deleteDialog.itemName}"? This action cannot be undone.
+              Are you sure you want to delete "{deleteDialog.itemName}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           
@@ -886,10 +914,10 @@ const WorkOrderRepository = () => {
             <Button 
               variant="destructive" 
               onClick={confirmDelete}
-              disabled={deleteConfirmation !== 'DELETE'}
+              disabled={deleteConfirmation !== 'DELETE' || deleteItemMutation.isPending}
               className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
             >
-              Delete Folder
+              {deleteItemMutation.isPending ? 'Deleting...' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>

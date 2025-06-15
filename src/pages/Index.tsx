@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import WorkOrderRepository from "@/components/WorkOrderRepository";
@@ -76,7 +75,6 @@ const Index = () => {
           </div>
         </div>
 
-        <WorkOrderRepository />
       </div>
     </div>
   );

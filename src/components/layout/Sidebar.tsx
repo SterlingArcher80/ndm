@@ -16,12 +16,19 @@ import {
 import { Button } from '@/components/ui/button';
 import { useThemePreference } from '../hooks/useThemePreference';
 
+// Helper to validate theme
+const allowedThemes = ["light", "dark", "system"] as const;
+type Theme = typeof allowedThemes[number];
+function normalizeTheme(theme: string): Theme {
+  return allowedThemes.includes(theme as Theme) ? (theme as Theme) : "system";
+}
+
 const ThemeSelector = () => {
   const { theme, setTheme } = useThemePreference();
   const options = [
-    { name: 'System', value: 'system', icon: Monitor },
-    { name: 'Light', value: 'light', icon: Sun },
-    { name: 'Dark', value: 'dark', icon: Moon },
+    { name: 'System', value: 'system' as Theme, icon: Monitor },
+    { name: 'Light', value: 'light' as Theme, icon: Sun },
+    { name: 'Dark', value: 'dark' as Theme, icon: Moon },
   ];
 
   return (
@@ -67,7 +74,8 @@ const AppSidebar = () => {
   };
 
   return (
-    <Sidebar defaultOpen={false}>
+    // Remove defaultOpen prop; not valid for Sidebar
+    <Sidebar>
       <SidebarHeader className="p-4 pb-0">
         <h2 className="text-lg font-semibold">Nucleus</h2>
         <p className="text-sm text-gray-600">- powered by DMSI</p>

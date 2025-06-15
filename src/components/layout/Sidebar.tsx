@@ -1,12 +1,18 @@
 
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarGroup,
+  SidebarGroupContent
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 
@@ -34,7 +40,20 @@ const AppSidebar = () => {
         <p className="text-sm text-gray-600">- powered by DMSI</p>
       </SidebarHeader>
       <SidebarContent>
-        {/* Content can be added here if needed */}
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/settings">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-4">
         <div className="mb-2">

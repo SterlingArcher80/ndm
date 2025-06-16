@@ -17,6 +17,7 @@ interface InventoryItemActionsProps {
     quantity: number;
     category_id?: string;
     location_id?: string;
+    custom_fields?: Record<string, any>;
   };
 }
 
@@ -37,6 +38,7 @@ const InventoryItemActions = ({ item }: InventoryItemActionsProps) => {
           quantity: item.quantity,
           category_id: item.category_id,
           location_id: item.location_id,
+          custom_fields: item.custom_fields || {},
         });
       
       if (error) {

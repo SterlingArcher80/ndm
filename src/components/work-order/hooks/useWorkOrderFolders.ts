@@ -15,12 +15,13 @@ export const useWorkOrderFolders = (
   workflowStages: WorkflowStage[] = []
 ) => {
   const folders = useMemo(() => {
-    console.log('🔍 Processing work order folders with stages:', workflowStages);
-    
-    if (!workflowStages.length) {
-      console.log('⚠️ No workflow stages available');
+    // Don't process if stages haven't loaded yet
+    if (!workflowStages || workflowStages.length === 0) {
+      console.log('⏳ Waiting for workflow stages to load...');
       return [];
     }
+
+    console.log('🔍 Processing work order folders with stages:', workflowStages);
 
     // Create folders based on workflow stages from database
     const stageFolders: WorkOrderFolder[] = workflowStages

@@ -4,10 +4,10 @@ import { FolderOpen } from 'lucide-react';
 import WorkOrderBreadcrumb from './WorkOrderBreadcrumb';
 import WorkOrderGrid from './WorkOrderGrid';
 import WorkOrderEmptyState from './WorkOrderEmptyState';
-import UploadArea from './UploadArea';
 import MoveItemDialog from './MoveItemDialog';
 import { useWorkOrderNavigation } from './hooks/useWorkOrderNavigation';
 import { useWorkOrderFolders } from './hooks/useWorkOrderFolders';
+import { useWorkflowStages } from './hooks/useWorkflowStages';
 import { WorkOrderFile } from './types';
 
 interface WorkOrderMainContentProps {
@@ -34,7 +34,8 @@ const WorkOrderMainContent = ({
     item: WorkOrderFile | null;
   }>({ open: false, item: null });
 
-  const { folders } = useWorkOrderFolders(workOrderItems, searchQuery);
+  const { stages } = useWorkflowStages();
+  const { folders } = useWorkOrderFolders(workOrderItems, searchQuery, stages);
   const { 
     getCurrentFolderContents, 
     getBreadcrumbPath, 
@@ -53,7 +54,7 @@ const WorkOrderMainContent = ({
   const folderCount = currentContents.filter(item => item.type === 'folder').length;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
       <div className="flex-1 p-6 overflow-y-auto">
         {selectedFolder ? (
           <div>
@@ -102,12 +103,6 @@ const WorkOrderMainContent = ({
           </div>
         )}
       </div>
-      
-      <UploadArea 
-        selectedFolder={selectedFolder}
-        folders={folders}
-        currentPath={currentPath}
-      />
 
       <MoveItemDialog
         open={moveDialog.open}

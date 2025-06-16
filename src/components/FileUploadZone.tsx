@@ -86,10 +86,10 @@ const FileUploadZone = () => {
   return (
     <div className="space-y-4">
       <Card 
-        className={`border-2 border-dashed transition-all duration-200 ${
+        className={`border-2 border-dashed transition-all duration-200 bg-white dark:bg-gray-900 ${
           isDragOver 
-            ? 'border-blue-500 bg-blue-500/10' 
-            : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30' 
+            : 'border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600'
         }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -97,16 +97,16 @@ const FileUploadZone = () => {
       >
         <div className="p-8 text-center">
           <Upload className={`h-12 w-12 mx-auto mb-4 ${
-            isDragOver ? 'text-blue-400' : 'text-gray-400'
+            isDragOver ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'
           }`} />
-          <h3 className="text-lg font-medium text-white mb-2">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             Drop files here or click to upload
           </h3>
-          <p className="text-gray-400 mb-4">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
             Support for PDF, DOC, DOCX, XLS, XLSX, and image files
           </p>
           <Button 
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => document.getElementById('file-input')?.click()}
           >
             <Upload className="mr-2 h-4 w-4" />
@@ -129,28 +129,28 @@ const FileUploadZone = () => {
 
       {/* Upload Progress */}
       {uploadedFiles.length > 0 && (
-        <Card className="bg-gray-800 border-gray-700">
+        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
           <div className="p-4">
-            <h4 className="font-medium text-white mb-4">Uploading Files</h4>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-4">Uploading Files</h4>
             <div className="space-y-3">
               {uploadedFiles.map((file) => (
                 <div key={file.id} className="flex items-center space-x-3">
-                  <File className="h-5 w-5 text-gray-400" />
+                  <File className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                   <div className="flex-1">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-medium text-white">{file.name}</span>
-                      <span className="text-xs text-gray-400">{formatFileSize(file.size)}</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{file.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(file.size)}</span>
                     </div>
                     <Progress 
                       value={file.progress} 
-                      className="h-2 bg-gray-700"
+                      className="h-2 bg-gray-200 dark:bg-gray-700"
                     />
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => removeFile(file.id)}
-                    className="text-gray-400 hover:text-white"
+                    className="text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-white"
                   >
                     <X className="h-4 w-4" />
                   </Button>

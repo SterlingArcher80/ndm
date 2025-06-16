@@ -22,7 +22,7 @@ const WorkOrderRepository = () => {
   const [newFolderName, setNewFolderName] = useState('');
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
-  const { data: workOrderItems = [] } = useQuery({
+  const { data: workOrderItems = [], refetch } = useQuery({
     queryKey: ['work-order-items'],
     queryFn: async () => {
       console.log('🔍 Fetching work order items from database...');

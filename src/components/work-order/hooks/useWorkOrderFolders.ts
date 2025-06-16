@@ -30,7 +30,7 @@ export const useWorkOrderFolders = (
       .map((stage) => {
         // Filter items for this specific workflow stage
         const stageItems = workOrderItems.filter(item => {
-          console.log(`🔍 Checking item ${item.name} with workflow_stage_id: ${item.workflow_stage_id} against stage: ${stage.id}`);
+          console.log(`🔍 Checking item ${item.name} with workflow_stage_id: "${item.workflow_stage_id}" against stage: "${stage.id}"`);
           return item.workflow_stage_id === stage.id;
         });
 

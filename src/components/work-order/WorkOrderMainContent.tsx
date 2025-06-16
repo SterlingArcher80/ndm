@@ -5,6 +5,7 @@ import WorkOrderBreadcrumb from './WorkOrderBreadcrumb';
 import WorkOrderGrid from './WorkOrderGrid';
 import WorkOrderEmptyState from './WorkOrderEmptyState';
 import MoveItemDialog from './MoveItemDialog';
+import UploadArea from './UploadArea';
 import { useWorkOrderNavigation } from './hooks/useWorkOrderNavigation';
 import { useWorkOrderFolders } from './hooks/useWorkOrderFolders';
 import { useWorkflowStages } from './hooks/useWorkflowStages';
@@ -75,6 +76,9 @@ const WorkOrderMainContent = ({
                 </p>
               </div>
             </div>
+
+            {/* Upload Area */}
+            <UploadArea selectedFolder={selectedFolder} currentPath={currentPath} />
 
             {currentContents.length > 0 ? (
               <WorkOrderGrid 

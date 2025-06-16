@@ -1,4 +1,3 @@
-
 import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -29,18 +28,18 @@ const InventoryDashboard = () => {
   const { data: stats } = useQuery({
     queryKey: ['inventory-stats'],
     queryFn: async () => {
-      const { data: totalItems } = await supabase
+      const { count: totalItems } = await supabase
         .from('inventory_items')
         .select('*', { count: 'exact', head: true });
 
-      const { data: lowStockItems } = await supabase
+      const { count: lowStockItems } = await supabase
         .from('inventory_items')
         .select('*', { count: 'exact', head: true })
         .lt('quantity', 10);
 
       return {
-        totalItems: totalItems?.length || 0,
-        lowStockItems: lowStockItems?.length || 0,
+        totalItems: totalItems || 0,
+        lowStockItems: lowStockItems || 0,
       };
     },
   });

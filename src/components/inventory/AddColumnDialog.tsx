@@ -72,7 +72,10 @@ const AddColumnDialog = () => {
       const { error } = await supabase
         .from('inventory_columns')
         .insert({
-          ...values,
+          name: values.name,
+          label: values.label,
+          type: values.type,
+          is_required: values.is_required,
           order_position: maxPosition + 1,
         });
 

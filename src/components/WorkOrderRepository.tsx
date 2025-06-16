@@ -59,7 +59,7 @@ const WorkOrderRepository = () => {
   });
 
   return (
-    <div className="h-[calc(100vh-12rem)] bg-gray-900 text-white rounded-lg overflow-hidden border border-gray-800">
+    <div className="h-[calc(100vh-12rem)] bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">
       <WorkOrderHeader 
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}

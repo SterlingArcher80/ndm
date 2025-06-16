@@ -103,27 +103,34 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
     mutationFn: async (values: ItemFormValues) => {
       console.log('Updating item with values:', values);
       
-      const { error } = await supabase
+      const updateData = {
+        name: values.name,
+        sku: values.sku,
+        description: values.description || null,
+        quantity: values.quantity,
+        category_id: values.category_id === 'none' ? null : values.category_id,
+        location_id: values.location_id === 'none' ? null : values.location_id,
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log('Sending update data to Supabase:', updateData);
+      
+      const { data, error } = await supabase
         .from('inventory_items')
-        .update({
-          name: values.name,
-          sku: values.sku,
-          description: values.description || null,
-          quantity: values.quantity,
-          category_id: values.category_id === 'none' ? null : values.category_id,
-          location_id: values.location_id === 'none' ? null : values.location_id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', item.id);
+        .update(updateData)
+        .eq('id', item.id)
+        .select();
       
       if (error) {
         console.error('Supabase update error:', error);
         throw error;
       }
       
-      console.log('Item updated successfully');
+      console.log('Supabase update response:', data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Update mutation successful:', data);
       queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
       queryClient.invalidateQueries({ queryKey: ['inventory-stats'] });
       toast.success('Item updated successfully');
@@ -131,7 +138,7 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
     },
     onError: (error) => {
       console.error('Error updating item:', error);
-      toast.error('Failed to update item');
+      toast.error(`Failed to update item: ${error.message}`);
     },
   });
 

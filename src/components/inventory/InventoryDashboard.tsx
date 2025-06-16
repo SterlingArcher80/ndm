@@ -1,3 +1,4 @@
+
 import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -190,7 +191,9 @@ const InventoryDashboard = () => {
                               quantity: item.quantity,
                               category_id: item.category_id,
                               location_id: item.location_id,
-                              custom_fields: item.custom_fields || {},
+                              custom_fields: typeof item.custom_fields === 'object' && item.custom_fields !== null && !Array.isArray(item.custom_fields) 
+                                ? item.custom_fields as Record<string, any>
+                                : {},
                             }}
                           />
                         </TableCell>

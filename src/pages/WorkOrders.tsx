@@ -13,7 +13,7 @@ const WorkOrders = () => {
 
   if (loading && !isDevelopment) {
     return (
-      <div className="flex items-center justify-center min-h-screen dark:bg-gray-950 bg-gray-50">
+      <div className="min-h-screen bg-white text-black dark:bg-gray-800 dark:text-white">
         <div className="text-lg text-gray-300">Loading...</div>
       </div>
     );

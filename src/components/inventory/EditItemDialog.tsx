@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -117,33 +118,40 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
 
       console.log('Sending update data to Supabase:', updateData);
       
-      // Use a simpler update query without .select() to see if that's causing issues
-      const { error } = await supabase
+      // Try the update with returning data to see if rows are affected
+      const { data: updateResult, error: updateError, count } = await supabase
         .from('inventory_items')
         .update(updateData)
-        .eq('id', item.id);
-      
-      if (error) {
-        console.error('Supabase update error:', error);
-        throw new Error(`Update failed: ${error.message}`);
-      }
-      
-      console.log('Update completed successfully');
-      
-      // Now fetch the updated item to return it
-      const { data: updatedItem, error: fetchError } = await supabase
-        .from('inventory_items')
-        .select('*')
         .eq('id', item.id)
-        .single();
+        .select('*');
       
-      if (fetchError) {
-        console.error('Error fetching updated item:', fetchError);
-        throw new Error(`Failed to fetch updated item: ${fetchError.message}`);
+      console.log('Update result:', updateResult);
+      console.log('Update count:', count);
+      console.log('Update error:', updateError);
+      
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        throw new Error(`Update failed: ${updateError.message}`);
       }
       
-      console.log('Updated item fetched:', updatedItem);
-      return updatedItem;
+      if (!updateResult || updateResult.length === 0) {
+        console.error('No rows were updated - possible RLS issue or item not found');
+        
+        // Let's check if the item exists and if we can read it
+        const { data: existingItem, error: fetchError } = await supabase
+          .from('inventory_items')
+          .select('*')
+          .eq('id', item.id)
+          .single();
+        
+        console.log('Can we read the item?', existingItem);
+        console.log('Fetch error:', fetchError);
+        
+        throw new Error('No rows were updated. This might be a Row Level Security issue or the item was not found.');
+      }
+      
+      console.log('Update completed successfully with result:', updateResult);
+      return updateResult[0];
     },
     onSuccess: (data) => {
       console.log('Update mutation successful:', data);

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -106,20 +105,6 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
       console.log('Updating item with values:', values);
       console.log('Item ID being updated:', item.id);
       
-      // First, let's verify the item exists in the database
-      const { data: existingItem, error: fetchError } = await supabase
-        .from('inventory_items')
-        .select('*')
-        .eq('id', item.id)
-        .single();
-      
-      if (fetchError) {
-        console.error('Error fetching existing item:', fetchError);
-        throw new Error(`Item not found: ${fetchError.message}`);
-      }
-      
-      console.log('Existing item in database:', existingItem);
-      
       const updateData = {
         name: values.name,
         sku: values.sku,
@@ -132,24 +117,33 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
 
       console.log('Sending update data to Supabase:', updateData);
       
-      const { data, error } = await supabase
+      // Use a simpler update query without .select() to see if that's causing issues
+      const { error } = await supabase
         .from('inventory_items')
         .update(updateData)
-        .eq('id', item.id)
-        .select();
+        .eq('id', item.id);
       
       if (error) {
         console.error('Supabase update error:', error);
-        throw error;
+        throw new Error(`Update failed: ${error.message}`);
       }
       
-      console.log('Supabase update response:', data);
+      console.log('Update completed successfully');
       
-      if (!data || data.length === 0) {
-        throw new Error('No rows were updated. Item may not exist.');
+      // Now fetch the updated item to return it
+      const { data: updatedItem, error: fetchError } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('id', item.id)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching updated item:', fetchError);
+        throw new Error(`Failed to fetch updated item: ${fetchError.message}`);
       }
       
-      return data;
+      console.log('Updated item fetched:', updatedItem);
+      return updatedItem;
     },
     onSuccess: (data) => {
       console.log('Update mutation successful:', data);

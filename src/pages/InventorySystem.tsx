@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
@@ -7,7 +8,10 @@ import InventoryDashboard from "@/components/inventory/InventoryDashboard";
 const InventorySystem = () => {
   const { user, loading } = useAuth();
 
-  if (loading) {
+  // Skip auth in development mode
+  const isDevelopment = import.meta.env.DEV;
+
+  if (loading && !isDevelopment) {
     return (
       <div className="flex items-center justify-center min-h-screen dark:bg-gray-950 bg-gray-50">
         <div className="text-lg text-gray-300">Loading...</div>
@@ -15,7 +19,7 @@ const InventorySystem = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !isDevelopment) {
     return <Navigate to="/auth" replace />;
   }
 

@@ -7,7 +7,10 @@ import { Package, ArrowRight } from "lucide-react";
 const Index = () => {
   const { user, loading } = useAuth();
 
-  if (loading) {
+  // Skip auth in development mode
+  const isDevelopment = import.meta.env.DEV;
+
+  if (loading && !isDevelopment) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading...</div>
@@ -15,7 +18,7 @@ const Index = () => {
     );
   }
 
-  if (user) {
+  if (user || isDevelopment) {
     return <Navigate to="/inventory" replace />;
   }
 

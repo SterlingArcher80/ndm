@@ -10,7 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const ManageSettings = () => {
   const { user, loading } = useAuth();
 
-  if (loading) {
+  // Skip auth in development mode
+  const isDevelopment = import.meta.env.DEV;
+
+  if (loading && !isDevelopment) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading...</div>
@@ -18,7 +21,7 @@ const ManageSettings = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !isDevelopment) {
     return <Navigate to="/auth" replace />;
   }
 

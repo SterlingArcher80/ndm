@@ -26,24 +26,24 @@ const ManageSettings = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen w-full flex bg-gray-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 min-h-screen flex flex-col">
         <TopNavbar />
-        <main className="flex-1 p-6 w-full">
-          <div className="w-full">
+        <main className="flex-1 p-6">
+          <div className="h-full w-full">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
               <p className="text-gray-600">Manage your system configuration</p>
             </div>
             
-            <Tabs defaultValue="inventory" className="w-full">
+            <Tabs defaultValue="inventory" className="w-full h-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="inventory">Inventory Settings</TabsTrigger>
                 <TabsTrigger value="workflow">Workflow Settings</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="inventory" className="mt-6">
+              <TabsContent value="inventory" className="mt-6 h-full">
                 <div className="mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Inventory Management</h2>
                   <p className="text-gray-600">Manage categories and locations for your inventory</p>
@@ -51,7 +51,7 @@ const ManageSettings = () => {
                 <CategoriesLocationsManager />
               </TabsContent>
               
-              <TabsContent value="workflow" className="mt-6">
+              <TabsContent value="workflow" className="mt-6 h-full">
                 <div className="mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Workflow Management</h2>
                   <p className="text-gray-600">Configure workflow stages for your work orders</p>

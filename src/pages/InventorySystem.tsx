@@ -24,12 +24,12 @@ const InventorySystem = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen w-full flex bg-gray-50 dark:bg-gray-950">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 min-h-screen flex flex-col">
         <TopNavbar />
-        <main className="flex-1 p-6 w-full bg-gray-50 dark:bg-gray-950">
-          <div className="w-full">
+        <main className="flex-1 p-6 bg-gray-50 dark:bg-gray-950">
+          <div className="h-full w-full">
             <InventoryDashboard />
           </div>
         </main>

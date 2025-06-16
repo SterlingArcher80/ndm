@@ -41,14 +41,14 @@ const WorkOrderSidebar = ({
 
   if (stagesLoading) {
     return (
-      <div className="w-80 border-r border-gray-800 bg-gray-950 flex flex-col">
+      <div className="w-80 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col">
         <div className="p-4 flex-1 overflow-y-auto">
-          <h2 className="text-lg font-semibold mb-4 text-gray-300">Workflow Stages</h2>
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-300">Workflow Stages</h2>
           <div className="space-y-2">
             <div className="animate-pulse">
-              <div className="h-16 bg-gray-800 rounded-lg mb-2"></div>
-              <div className="h-16 bg-gray-800 rounded-lg mb-2"></div>
-              <div className="h-16 bg-gray-800 rounded-lg"></div>
+              <div className="h-16 bg-gray-200 dark:bg-gray-800 rounded-lg mb-2"></div>
+              <div className="h-16 bg-gray-200 dark:bg-gray-800 rounded-lg mb-2"></div>
+              <div className="h-16 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
             </div>
           </div>
         </div>
@@ -57,9 +57,9 @@ const WorkOrderSidebar = ({
   }
 
   return (
-    <div className="w-80 border-r border-gray-800 bg-gray-950 flex flex-col">
+    <div className="w-80 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950 flex flex-col">
       <div className="p-4 flex-1 overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4 text-gray-300">Workflow Stages</h2>
+        <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-300">Workflow Stages</h2>
         <div className="space-y-2">
           {folders.map((folder) => {
             const folderCount = folderCounts[folder.id] || 0;
@@ -68,8 +68,8 @@ const WorkOrderSidebar = ({
                 key={folder.id}
                 className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
                   selectedFolder === folder.id
-                    ? 'bg-gray-800 border-l-4 border-blue-500'
-                    : 'hover:bg-gray-800'
+                    ? 'bg-gray-200 dark:bg-gray-800 border-l-4 border-blue-500'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
                 onClick={() => {
                   setSelectedFolder(folder.id);
@@ -78,12 +78,12 @@ const WorkOrderSidebar = ({
                 title={`Upload to: ${folder.folderPath}`}
               >
                 <div className={`w-3 h-3 rounded-full ${folder.color} mr-3`}></div>
-                <FolderOpen className="h-5 w-5 text-gray-400 mr-3" />
+                <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400 mr-3" />
                 <div className="flex-1">
-                  <div className="font-medium text-gray-300">{folder.name}</div>
-                  <div className="text-sm text-gray-500">{folderCount} folders</div>
+                  <div className="font-medium text-gray-900 dark:text-gray-300">{folder.name}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-500">{folderCount} folders</div>
                 </div>
-                <Badge variant="secondary" className="bg-gray-800 text-gray-300">
+                <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-300">
                   {folderCount}
                 </Badge>
               </div>

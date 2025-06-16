@@ -65,10 +65,10 @@ const WorkOrderMainContent = ({
 
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-white">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   {breadcrumbPath.length > 0 ? breadcrumbPath[breadcrumbPath.length - 1].name : 'Select a folder'}
                 </h2>
-                <p className="text-gray-400 mt-1">
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
                   {folderCount} folders, {currentContents.length - folderCount} files
                   {searchQuery && ` (filtered by "${searchQuery}")`}
                 </p>
@@ -94,9 +94,9 @@ const WorkOrderMainContent = ({
           </div>
         ) : (
           <div className="text-center py-20">
-            <FolderOpen className="h-20 w-20 text-gray-600 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-gray-400 mb-4">Select a Workflow Stage</h2>
-            <p className="text-gray-500 text-lg">
+            <FolderOpen className="h-20 w-20 text-gray-400 dark:text-gray-600 mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-400 mb-4">Select a Workflow Stage</h2>
+            <p className="text-gray-600 dark:text-gray-500 text-lg">
               Choose a folder from the sidebar to view and manage work orders
             </p>
           </div>

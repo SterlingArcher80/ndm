@@ -38,20 +38,20 @@ const FolderContextMenu = ({ folder, onDelete, onMove }: FolderContextMenuProps)
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-48 bg-gray-800 border-gray-700">
+      <DropdownMenuContent className="w-48 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <DropdownMenuItem 
-          className="text-gray-300 hover:bg-gray-700"
+          className="text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           onClick={handleRename}
         >
           <Edit className="mr-2 h-4 w-4" />
           Rename
         </DropdownMenuItem>
         <DropdownMenuItem 
-          className="text-gray-300 hover:bg-gray-700"
+          className="text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
           onClick={(e) => {
             e.stopPropagation();
             handleMove();
@@ -60,9 +60,9 @@ const FolderContextMenu = ({ folder, onDelete, onMove }: FolderContextMenuProps)
           <Move className="mr-2 h-4 w-4" />
           Move to...
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-gray-700" />
+        <DropdownMenuSeparator className="bg-gray-200 dark:bg-gray-700" />
         <DropdownMenuItem 
-          className="text-red-400 hover:bg-gray-700"
+          className="text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
           onClick={handleDelete}
         >
           <Trash2 className="mr-2 h-4 w-4" />

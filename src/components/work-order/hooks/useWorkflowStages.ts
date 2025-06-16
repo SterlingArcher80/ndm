@@ -97,6 +97,72 @@ export const useWorkflowStages = () => {
     }
   };
 
+  const addStage = async (name: string, color: string) => {
+    try {
+      console.log(`➕ Adding new stage: ${name} with color: ${color}`);
+      
+      // Get the highest order position
+      const maxOrderPosition = Math.max(...stages.map(s => s.order_position), 0);
+      const newOrderPosition = maxOrderPosition + 1;
+      
+      // Generate a unique ID (slug format)
+      const id = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      const uniqueId = `${id}-${Date.now()}`;
+      
+      const { data, error } = await supabase
+        .from('workflow_stages')
+        .insert({
+          id: uniqueId,
+          name,
+          color,
+          order_position: newOrderPosition
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setStages(prev => [...prev, data]);
+      toast.success('New workflow stage added successfully');
+    } catch (error) {
+      console.error('Error adding new stage:', error);
+      toast.error('Failed to add new workflow stage');
+    }
+  };
+
+  const deleteStage = async (id: string) => {
+    try {
+      console.log(`🗑️ Deleting stage: ${id}`);
+      
+      // Check if there are any work orders in this stage
+      const { data: workOrders, error: checkError } = await supabase
+        .from('work_order_items')
+        .select('id')
+        .eq('workflow_stage_id', id)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      if (workOrders && workOrders.length > 0) {
+        toast.error('Cannot delete stage: There are work orders in this stage. Please move them to another stage first.');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('workflow_stages')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setStages(prev => prev.filter(stage => stage.id !== id));
+      toast.success('Workflow stage deleted successfully');
+    } catch (error) {
+      console.error('Error deleting stage:', error);
+      toast.error('Failed to delete workflow stage');
+    }
+  };
+
   const reorderStages = async (reorderedStages: WorkflowStage[]) => {
     try {
       console.log('🔄 Reordering workflow stages...');
@@ -136,6 +202,8 @@ export const useWorkflowStages = () => {
     loading,
     updateStageName,
     reorderStages,
+    addStage,
+    deleteStage,
     refetch: fetchStages
   };
 };

@@ -4,14 +4,41 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit2, GripVertical, Save, X, Loader2 } from 'lucide-react';
+import { Edit2, GripVertical, Save, X, Loader2, Plus, Trash2 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useWorkflowStages } from './hooks/useWorkflowStages';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 const WorkflowStagesManager = () => {
-  const { stages, loading, updateStageName, reorderStages } = useWorkflowStages();
+  const { stages, loading, updateStageName, reorderStages, addStage, deleteStage } = useWorkflowStages();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newStageName, setNewStageName] = useState('');
+  const [newStageColor, setNewStageColor] = useState('bg-blue-500');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+
+  const colorOptions = [
+    'bg-blue-500',
+    'bg-red-500',
+    'bg-green-500',
+    'bg-yellow-500',
+    'bg-purple-500',
+    'bg-pink-500',
+    'bg-indigo-500',
+    'bg-gray-500',
+    'bg-orange-500',
+    'bg-teal-500'
+  ];
 
   const handleEdit = (stage: { id: string; name: string }) => {
     setEditingId(stage.id);
@@ -29,6 +56,20 @@ const WorkflowStagesManager = () => {
   const handleCancel = () => {
     setEditingId(null);
     setEditingName('');
+  };
+
+  const handleAddStage = async () => {
+    if (!newStageName.trim()) return;
+    
+    await addStage(newStageName.trim(), newStageColor);
+    setIsAddDialogOpen(false);
+    setNewStageName('');
+    setNewStageColor('bg-blue-500');
+  };
+
+  const handleDeleteStage = async (stageId: string) => {
+    await deleteStage(stageId);
+    setDeleteDialogOpen(null);
   };
 
   const handleDragEnd = (result: DropResult) => {
@@ -61,10 +102,64 @@ const WorkflowStagesManager = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Workflow Stages</CardTitle>
-        <p className="text-sm text-gray-600">
-          Manage the workflow stages for your work orders. Drag to reorder, click edit to rename.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Workflow Stages</CardTitle>
+            <p className="text-sm text-gray-600">
+              Manage the workflow stages for your work orders. Drag to reorder, click edit to rename.
+            </p>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Stage
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Workflow Stage</DialogTitle>
+                <DialogDescription>
+                  Create a new stage for your workflow process.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="stage-name">Stage Name</Label>
+                  <Input
+                    id="stage-name"
+                    value={newStageName}
+                    onChange={(e) => setNewStageName(e.target.value)}
+                    placeholder="Enter stage name"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Color</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {colorOptions.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        className={`w-8 h-8 rounded-full ${color} border-2 ${
+                          newStageColor === color ? 'border-gray-900' : 'border-gray-300'
+                        }`}
+                        onClick={() => setNewStageColor(color)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddStage} disabled={!newStageName.trim()}>
+                  Add Stage
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </CardHeader>
       <CardContent>
         <DragDropContext onDragEnd={handleDragEnd}>
@@ -126,13 +221,46 @@ const WorkflowStagesManager = () => {
                               </Button>
                             </>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(stage)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEdit(stage)}
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                              <Dialog open={deleteDialogOpen === stage.id} onOpenChange={(open) => setDeleteDialogOpen(open ? stage.id : null)}>
+                                <DialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Delete Workflow Stage</DialogTitle>
+                                    <DialogDescription>
+                                      Are you sure you want to delete the "{stage.name}" stage? This action cannot be undone.
+                                      Any work orders in this stage will need to be moved to another stage first.
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <DialogFooter>
+                                    <Button variant="outline" onClick={() => setDeleteDialogOpen(null)}>
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      onClick={() => handleDeleteStage(stage.id)}
+                                    >
+                                      Delete Stage
+                                    </Button>
+                                  </DialogFooter>
+                                </DialogContent>
+                              </Dialog>
+                            </>
                           )}
                         </div>
                       </div>

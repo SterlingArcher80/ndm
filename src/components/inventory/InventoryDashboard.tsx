@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AddItemDialog from './AddItemDialog';
 import EditItemDialog from './EditItemDialog';
+import InventoryItemActions from './InventoryItemActions';
 
 const InventoryDashboard = () => {
   const { data: inventoryItems, isLoading } = useQuery({
@@ -141,7 +142,7 @@ const InventoryDashboard = () => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <EditItemDialog 
+                        <InventoryItemActions 
                           item={{
                             id: item.id,
                             name: item.name,

@@ -63,6 +63,8 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  console.log('EditItemDialog item prop:', item);
+
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
     defaultValues: {
@@ -102,6 +104,21 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
   const updateItemMutation = useMutation({
     mutationFn: async (values: ItemFormValues) => {
       console.log('Updating item with values:', values);
+      console.log('Item ID being updated:', item.id);
+      
+      // First, let's verify the item exists in the database
+      const { data: existingItem, error: fetchError } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('id', item.id)
+        .single();
+      
+      if (fetchError) {
+        console.error('Error fetching existing item:', fetchError);
+        throw new Error(`Item not found: ${fetchError.message}`);
+      }
+      
+      console.log('Existing item in database:', existingItem);
       
       const updateData = {
         name: values.name,
@@ -127,6 +144,11 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
       }
       
       console.log('Supabase update response:', data);
+      
+      if (!data || data.length === 0) {
+        throw new Error('No rows were updated. Item may not exist.');
+      }
+      
       return data;
     },
     onSuccess: (data) => {

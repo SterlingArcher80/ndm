@@ -78,7 +78,7 @@ const WorkOrderMainContent = ({
             </div>
 
             {/* Upload Area */}
-            <UploadArea selectedFolder={selectedFolder} currentPath={currentPath} />
+            <UploadArea selectedFolder={selectedFolder} currentPath={currentPath} folders={folders} />
 
             {currentContents.length > 0 ? (
               <WorkOrderGrid 

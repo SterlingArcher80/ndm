@@ -70,8 +70,8 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
       sku: item.sku,
       description: item.description || '',
       quantity: item.quantity,
-      category_id: item.category_id || '',
-      location_id: item.location_id || '',
+      category_id: item.category_id || 'none',
+      location_id: item.location_id || 'none',
     },
   });
 
@@ -101,6 +101,8 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
 
   const updateItemMutation = useMutation({
     mutationFn: async (values: ItemFormValues) => {
+      console.log('Updating item with values:', values);
+      
       const { error } = await supabase
         .from('inventory_items')
         .update({
@@ -108,19 +110,24 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
           sku: values.sku,
           description: values.description || null,
           quantity: values.quantity,
-          category_id: values.category_id || null,
-          location_id: values.location_id || null,
+          category_id: values.category_id === 'none' ? null : values.category_id,
+          location_id: values.location_id === 'none' ? null : values.location_id,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', item.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
+      
+      console.log('Item updated successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
       queryClient.invalidateQueries({ queryKey: ['inventory-stats'] });
       toast.success('Item updated successfully');
       setOpen(false);
-      form.reset();
     },
     onError: (error) => {
       console.error('Error updating item:', error);
@@ -129,6 +136,7 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
   });
 
   const onSubmit = (values: ItemFormValues) => {
+    console.log('Form submitted with values:', values);
     updateItemMutation.mutate(values);
   };
 
@@ -229,7 +237,7 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No category</SelectItem>
+                      <SelectItem value="none">No category</SelectItem>
                       {categories?.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -255,7 +263,7 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No location</SelectItem>
+                      <SelectItem value="none">No location</SelectItem>
                       {locations?.map((location) => (
                         <SelectItem key={location.id} value={location.id}>
                           {location.name}

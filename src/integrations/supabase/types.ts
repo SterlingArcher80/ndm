@@ -33,11 +33,45 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_columns: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean
+          label: string
+          name: string
+          order_position: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label: string
+          name: string
+          order_position?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label?: string
+          name?: string
+          order_position?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_items: {
         Row: {
           category_id: string | null
           created_at: string
           created_by: string | null
+          custom_fields: Json | null
           description: string | null
           id: string
           image_url: string | null
@@ -51,6 +85,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json | null
           description?: string | null
           id?: string
           image_url?: string | null
@@ -64,6 +99,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           created_by?: string | null
+          custom_fields?: Json | null
           description?: string | null
           id?: string
           image_url?: string | null

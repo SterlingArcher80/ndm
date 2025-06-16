@@ -1,11 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -55,12 +56,14 @@ interface EditItemDialogProps {
     quantity: number;
     category_id?: string;
     location_id?: string;
+    custom_fields?: any;
   };
   trigger?: React.ReactNode;
 }
 
 const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [customFields, setCustomFields] = useState<Record<string, any>>(item.custom_fields || {});
   const queryClient = useQueryClient();
 
   console.log('EditItemDialog item prop:', item);
@@ -101,6 +104,84 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
     },
   });
 
+  const { data: customColumns } = useQuery({
+    queryKey: ['inventory-columns'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inventory_columns')
+        .select('*')
+        .order('order_position');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleCustomFieldChange = (fieldName: string, value: any, fieldType: string) => {
+    let processedValue = value;
+    
+    // Process value based on field type
+    if (fieldType === 'number') {
+      processedValue = value === '' ? null : Number(value);
+    } else if (fieldType === 'boolean') {
+      processedValue = Boolean(value);
+    } else if (fieldType === 'date') {
+      processedValue = value || null;
+    }
+    
+    setCustomFields(prev => ({
+      ...prev,
+      [fieldName]: processedValue
+    }));
+  };
+
+  const renderCustomField = (column: any) => {
+    const value = customFields[column.name] || '';
+    
+    switch (column.type) {
+      case 'number':
+        return (
+          <Input
+            type="number"
+            value={value || ''}
+            onChange={(e) => handleCustomFieldChange(column.name, e.target.value, column.type)}
+            placeholder={`Enter ${column.label.toLowerCase()}`}
+          />
+        );
+      case 'date':
+        return (
+          <Input
+            type="date"
+            value={value || ''}
+            onChange={(e) => handleCustomFieldChange(column.name, e.target.value, column.type)}
+          />
+        );
+      case 'boolean':
+        return (
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={column.name}
+              checked={Boolean(value)}
+              onCheckedChange={(checked) => handleCustomFieldChange(column.name, checked, column.type)}
+            />
+          </div>
+        );
+      default: // text
+        return (
+          <Input
+            type="text"
+            value={value || ''}
+            onChange={(e) => handleCustomFieldChange(column.name, e.target.value, column.type)}
+            placeholder={`Enter ${column.label.toLowerCase()}`}
+          />
+        );
+    }
+  };
+
+  useEffect(() => {
+    setCustomFields(item.custom_fields || {});
+  }, [item.custom_fields]);
+
   const updateItemMutation = useMutation({
     mutationFn: async (values: ItemFormValues) => {
       console.log('Updating item with values:', values);
@@ -113,12 +194,12 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
         quantity: values.quantity,
         category_id: values.category_id === 'none' ? null : values.category_id,
         location_id: values.location_id === 'none' ? null : values.location_id,
+        custom_fields: customFields,
         updated_at: new Date().toISOString(),
       };
 
       console.log('Sending update data to Supabase:', updateData);
       
-      // Try the update with returning data to see if rows are affected
       const { data: updateResult, error: updateError, count } = await supabase
         .from('inventory_items')
         .update(updateData)
@@ -137,7 +218,6 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
       if (!updateResult || updateResult.length === 0) {
         console.error('No rows were updated - possible RLS issue or item not found');
         
-        // Let's check if the item exists and if we can read it
         const { data: existingItem, error: fetchError } = await supabase
           .from('inventory_items')
           .select('*')
@@ -180,7 +260,7 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Item</DialogTitle>
           <DialogDescription>
@@ -306,6 +386,22 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
                 </FormItem>
               )}
             />
+
+            {/* Custom Fields */}
+            {customColumns && customColumns.length > 0 && (
+              <div className="space-y-4 border-t pt-4">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white">Custom Fields</h3>
+                {customColumns.map((column) => (
+                  <div key={column.id} className="space-y-2">
+                    <FormLabel htmlFor={column.name}>
+                      {column.label}
+                      {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                    </FormLabel>
+                    {renderCustomField(column)}
+                  </div>
+                ))}
+              </div>
+            )}
             
             <DialogFooter>
               <Button 

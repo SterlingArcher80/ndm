@@ -1,3 +1,4 @@
+
 import { Package, TrendingUp, AlertTriangle, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,6 +27,19 @@ const InventoryDashboard = () => {
     },
   });
 
+  const { data: customColumns } = useQuery({
+    queryKey: ['inventory-columns'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inventory_columns')
+        .select('*')
+        .order('order_position');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: stats } = useQuery({
     queryKey: ['inventory-stats'],
     queryFn: async () => {
@@ -44,6 +58,23 @@ const InventoryDashboard = () => {
       };
     },
   });
+
+  const renderCustomFieldValue = (item: any, column: any) => {
+    const value = item.custom_fields?.[column.name];
+    
+    if (value === null || value === undefined) {
+      return <span className="text-gray-400">-</span>;
+    }
+    
+    switch (column.type) {
+      case 'boolean':
+        return value ? '✓' : '✗';
+      case 'date':
+        return value ? new Date(value).toLocaleDateString() : '-';
+      default:
+        return String(value);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -118,46 +149,57 @@ const InventoryDashboard = () => {
             </div>
             
             {inventoryItems && inventoryItems.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {inventoryItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.sku}</TableCell>
-                      <TableCell>{item.categories?.name || 'N/A'}</TableCell>
-                      <TableCell>{item.locations?.name || 'N/A'}</TableCell>
-                      <TableCell>
-                        <span className={item.quantity < 10 ? 'text-orange-600 font-medium' : ''}>
-                          {item.quantity}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <InventoryItemActions 
-                          item={{
-                            id: item.id,
-                            name: item.name,
-                            sku: item.sku,
-                            description: item.description,
-                            quantity: item.quantity,
-                            category_id: item.category_id,
-                            location_id: item.location_id,
-                          }}
-                        />
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Location</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      {customColumns?.map((column) => (
+                        <TableHead key={column.id}>{column.label}</TableHead>
+                      ))}
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {inventoryItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>{item.sku}</TableCell>
+                        <TableCell>{item.categories?.name || 'N/A'}</TableCell>
+                        <TableCell>{item.locations?.name || 'N/A'}</TableCell>
+                        <TableCell>
+                          <span className={item.quantity < 10 ? 'text-orange-600 font-medium' : ''}>
+                            {item.quantity}
+                          </span>
+                        </TableCell>
+                        {customColumns?.map((column) => (
+                          <TableCell key={column.id}>
+                            {renderCustomFieldValue(item, column)}
+                          </TableCell>
+                        ))}
+                        <TableCell>
+                          <InventoryItemActions 
+                            item={{
+                              id: item.id,
+                              name: item.name,
+                              sku: item.sku,
+                              description: item.description,
+                              quantity: item.quantity,
+                              category_id: item.category_id,
+                              location_id: item.location_id,
+                              custom_fields: item.custom_fields,
+                            }}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Package className="mx-auto h-12 w-12 text-gray-400 mb-4" />

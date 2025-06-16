@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,8 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
     location_id: '',
   });
 
+  const [customFields, setCustomFields] = useState<Record<string, any>>({});
+
   // Fetch categories
   const { data: categories } = useQuery({
     queryKey: ['categories'],
@@ -74,6 +77,87 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
     },
   });
 
+  // Fetch custom columns
+  const { data: customColumns } = useQuery({
+    queryKey: ['inventory-columns'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('inventory_columns')
+        .select('*')
+        .order('order_position');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const handleCustomFieldChange = (fieldName: string, value: any, fieldType: string) => {
+    let processedValue = value;
+    
+    // Process value based on field type
+    if (fieldType === 'number') {
+      processedValue = value === '' ? null : Number(value);
+    } else if (fieldType === 'boolean') {
+      processedValue = Boolean(value);
+    } else if (fieldType === 'date') {
+      processedValue = value || null;
+    }
+    
+    setCustomFields(prev => ({
+      ...prev,
+      [fieldName]: processedValue
+    }));
+  };
+
+  const renderCustomField = (column: any) => {
+    const value = customFields[column.name] || '';
+    
+    switch (column.type) {
+      case 'number':
+        return (
+          <Input
+            type="number"
+            value={value || ''}
+            onChange={(e) => handleCustomFieldChange(column.name, e.target.value, column.type)}
+            placeholder={`Enter ${column.label.toLowerCase()}`}
+            required={column.is_required}
+          />
+        );
+      case 'date':
+        return (
+          <Input
+            type="date"
+            value={value || ''}
+            onChange={(e) => handleCustomFieldChange(column.name, e.target.value, column.type)}
+            required={column.is_required}
+          />
+        );
+      case 'boolean':
+        return (
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={column.name}
+              checked={Boolean(value)}
+              onCheckedChange={(checked) => handleCustomFieldChange(column.name, checked, column.type)}
+            />
+            <Label htmlFor={column.name} className="text-sm font-normal">
+              {column.label}
+            </Label>
+          </div>
+        );
+      default: // text
+        return (
+          <Input
+            type="text"
+            value={value || ''}
+            onChange={(e) => handleCustomFieldChange(column.name, e.target.value, column.type)}
+            placeholder={`Enter ${column.label.toLowerCase()}`}
+            required={column.is_required}
+          />
+        );
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -86,6 +170,7 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
           created_by: user?.id,
           category_id: formData.category_id || null,
           location_id: formData.location_id || null,
+          custom_fields: customFields,
         });
 
       if (error) throw error;
@@ -104,6 +189,7 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
         category_id: '',
         location_id: '',
       });
+      setCustomFields({});
 
       // Refresh the inventory items
       queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
@@ -134,7 +220,7 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
       <DialogTrigger asChild>
         {trigger || defaultTrigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Inventory Item</DialogTitle>
           <DialogDescription>
@@ -225,6 +311,22 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
               rows={3}
             />
           </div>
+
+          {/* Custom Fields */}
+          {customColumns && customColumns.length > 0 && (
+            <div className="space-y-4 border-t pt-4">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">Custom Fields</h3>
+              {customColumns.map((column) => (
+                <div key={column.id} className="space-y-2">
+                  <Label htmlFor={column.name}>
+                    {column.label}
+                    {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                  </Label>
+                  {renderCustomField(column)}
+                </div>
+              ))}
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

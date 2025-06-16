@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Upload, AlertCircle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -124,13 +125,13 @@ const UploadArea = ({ selectedFolder, folders, currentPath }: UploadAreaProps) =
   const displayPath = getCurrentFolderPath();
 
   return (
-    <div className="p-4 border-t border-gray-800">
-      <h3 className="text-sm font-medium text-gray-300 mb-3">Upload to Current Location</h3>
+    <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
+      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-300 mb-3">Upload to Current Location</h3>
       
       {showUploadPrompt && (
-        <Alert className="mb-3 bg-orange-900/50 border-orange-700">
-          <AlertCircle className="h-4 w-4 text-orange-500" />
-          <AlertDescription className="text-orange-300 text-sm">
+        <Alert className="mb-3 bg-orange-50 dark:bg-orange-900/50 border-orange-200 dark:border-orange-700">
+          <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-500" />
+          <AlertDescription className="text-orange-800 dark:text-orange-300 text-sm">
             Please select a workflow stage first
           </AlertDescription>
         </Alert>
@@ -139,8 +140,8 @@ const UploadArea = ({ selectedFolder, folders, currentPath }: UploadAreaProps) =
       <Card 
         className={`border-2 border-dashed transition-all duration-200 cursor-pointer ${
           isDragOverUpload 
-            ? 'border-blue-500 bg-blue-500/10' 
-            : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' 
+            : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:border-gray-400 dark:hover:border-gray-600'
         } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
         onDragOver={handleUploadDragOver}
         onDragLeave={handleUploadDragLeave}
@@ -149,16 +150,16 @@ const UploadArea = ({ selectedFolder, folders, currentPath }: UploadAreaProps) =
       >
         <div className="p-6 text-center">
           {isUploading ? (
-            <Loader2 className="h-8 w-8 mx-auto mb-2 text-blue-400 animate-spin" />
+            <Loader2 className="h-8 w-8 mx-auto mb-2 text-blue-500 dark:text-blue-400 animate-spin" />
           ) : (
             <Upload className={`h-8 w-8 mx-auto mb-2 ${
-              isDragOverUpload ? 'text-blue-400' : 'text-gray-400'
+              isDragOverUpload ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
             }`} />
           )}
-          <p className="text-sm text-gray-300 mb-1">
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
             {isUploading ? 'Uploading files...' : 'Drop files here'}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-500">
             {selectedFolder ? `→ ${displayPath}` : 'Select a stage first'}
           </p>
         </div>

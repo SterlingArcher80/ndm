@@ -150,6 +150,47 @@ export type Database = {
         }
         Relationships: []
       }
+      onedrive_file_tracking: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          onedrive_file_id: string
+          onedrive_file_path: string
+          original_file_id: string
+          updated_at: string
+          upload_timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          onedrive_file_id: string
+          onedrive_file_path: string
+          original_file_id: string
+          updated_at?: string
+          upload_timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          onedrive_file_id?: string
+          onedrive_file_path?: string
+          original_file_id?: string
+          updated_at?: string
+          upload_timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onedrive_file_tracking_original_file_id_fkey"
+            columns: ["original_file_id"]
+            isOneToOne: false
+            referencedRelation: "work_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

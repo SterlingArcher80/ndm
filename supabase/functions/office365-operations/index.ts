@@ -25,7 +25,16 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization');
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        headers: {
+          authorization: authHeader || '',
+        },
+      },
+    });
+
     const { action, fileId, fileName, fileUrl, accessToken }: Office365Request = await req.json();
 
     console.log(`Processing ${action} for file: ${fileName}`);

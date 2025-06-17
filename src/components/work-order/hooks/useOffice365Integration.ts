@@ -58,7 +58,7 @@ export const useOffice365Integration = () => {
           action: 'upload',
           fileId: file.id,
           fileName: file.name,
-          fileUrl: file.url,
+          fileUrl: file.file_url,
           accessToken: accessToken
         }
       });

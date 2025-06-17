@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
+import ImageUpload from './ImageUpload';
 
 interface AddItemDialogProps {
   trigger?: React.ReactNode;
@@ -101,6 +102,8 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
       processedValue = Boolean(value);
     } else if (fieldType === 'date') {
       processedValue = value || null;
+    } else if (fieldType === 'image') {
+      processedValue = value; // Image URLs are stored as strings
     }
     
     setCustomFields(prev => ({
@@ -144,6 +147,15 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
               {column.label}
             </Label>
           </div>
+        );
+      case 'image':
+        return (
+          <ImageUpload
+            value={value || ''}
+            onChange={(url) => handleCustomFieldChange(column.name, url, column.type)}
+            required={column.is_required}
+            label={column.label}
+          />
         );
       default: // text
         return (
@@ -318,10 +330,12 @@ const AddItemDialog = ({ trigger }: AddItemDialogProps) => {
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">Custom Fields</h3>
               {customColumns.map((column) => (
                 <div key={column.id} className="space-y-2">
-                  <Label htmlFor={column.name}>
-                    {column.label}
-                    {column.is_required && <span className="text-red-500 ml-1">*</span>}
-                  </Label>
+                  {column.type !== 'image' && (
+                    <Label htmlFor={column.name}>
+                      {column.label}
+                      {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                    </Label>
+                  )}
                   {renderCustomField(column)}
                 </div>
               ))}

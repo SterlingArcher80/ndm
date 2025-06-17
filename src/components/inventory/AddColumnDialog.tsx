@@ -38,7 +38,7 @@ import { toast } from 'sonner';
 const columnSchema = z.object({
   name: z.string().min(1, 'Name is required').regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, 'Name must be a valid identifier'),
   label: z.string().min(1, 'Label is required'),
-  type: z.enum(['text', 'number', 'date', 'boolean']),
+  type: z.enum(['text', 'number', 'date', 'boolean', 'image']),
   is_required: z.boolean().default(false),
 });
 
@@ -159,6 +159,7 @@ const AddColumnDialog = () => {
                       <SelectItem value="number">Number</SelectItem>
                       <SelectItem value="date">Date</SelectItem>
                       <SelectItem value="boolean">Boolean</SelectItem>
+                      <SelectItem value="image">Image</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

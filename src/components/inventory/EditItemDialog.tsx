@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,6 +34,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Edit } from 'lucide-react';
 import { toast } from 'sonner';
+import ImageUpload from './ImageUpload';
 
 const itemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -127,6 +127,8 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
       processedValue = Boolean(value);
     } else if (fieldType === 'date') {
       processedValue = value || null;
+    } else if (fieldType === 'image') {
+      processedValue = value; // Image URLs are stored as strings
     }
     
     setCustomFields(prev => ({
@@ -165,6 +167,14 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
               onCheckedChange={(checked) => handleCustomFieldChange(column.name, checked, column.type)}
             />
           </div>
+        );
+      case 'image':
+        return (
+          <ImageUpload
+            value={value || ''}
+            onChange={(url) => handleCustomFieldChange(column.name, url, column.type)}
+            label={column.label}
+          />
         );
       default: // text
         return (
@@ -393,10 +403,12 @@ const EditItemDialog = ({ item, trigger }: EditItemDialogProps) => {
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white">Custom Fields</h3>
                 {customColumns.map((column) => (
                   <div key={column.id} className="space-y-2">
-                    <FormLabel htmlFor={column.name}>
-                      {column.label}
-                      {column.is_required && <span className="text-red-500 ml-1">*</span>}
-                    </FormLabel>
+                    {column.type !== 'image' && (
+                      <FormLabel htmlFor={column.name}>
+                        {column.label}
+                        {column.is_required && <span className="text-red-500 ml-1">*</span>}
+                      </FormLabel>
+                    )}
                     {renderCustomField(column)}
                   </div>
                 ))}

@@ -71,6 +71,22 @@ const InventoryDashboard = () => {
         return value ? '✓' : '✗';
       case 'date':
         return value ? new Date(value).toLocaleDateString() : '-';
+      case 'image':
+        return value ? (
+          <div className="w-12 h-12 rounded overflow-hidden border">
+            <img 
+              src={value} 
+              alt="Image" 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/placeholder.svg';
+              }}
+            />
+          </div>
+        ) : (
+          <span className="text-gray-400">No image</span>
+        );
       default:
         return String(value);
     }

@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, Download, ExternalLink, AlertCircle, RefreshCw, Trash2 } from 'lucide-react';
 import { WorkOrderFile } from './types';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
@@ -17,7 +17,50 @@ interface FilePreviewDialogProps {
 const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [currentFileUrl, setCurrentFileUrl] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Check if file is in OneDrive and get the latest version
+  const { data: oneDriveInfo } = useQuery({
+    queryKey: ['onedrive-info', file?.id],
+    queryFn: async () => {
+      if (!file?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('onedrive_file_tracking')
+        .select('*')
+        .eq('original_file_id', file.id)
+        .order('upload_timestamp', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking OneDrive status:', error);
+        return null;
+      }
+
+      return data;
+    },
+    enabled: !!file?.id && open
+  });
+
+  // Update the current file URL based on OneDrive status
+  useEffect(() => {
+    if (!file) {
+      setCurrentFileUrl(null);
+      return;
+    }
+
+    // If file is in OneDrive, we'll use the original file URL but add a cache-busting parameter
+    if (oneDriveInfo) {
+      // Add timestamp to break cache for files that might have been updated
+      const url = new URL(file.file_url || '');
+      url.searchParams.set('t', Date.now().toString());
+      setCurrentFileUrl(url.toString());
+    } else {
+      setCurrentFileUrl(file.file_url || null);
+    }
+  }, [file, oneDriveInfo]);
 
   const deleteFileMutation = useMutation({
     mutationFn: async (fileId: string) => {
@@ -84,18 +127,19 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   };
 
   const fileType = getFileType(file.name, file.mime_type);
-  const fileUrl = file.file_url;
-  const isOrphanedFile = !fileUrl || !file.mime_type;
+  const isOrphanedFile = !currentFileUrl || !file.mime_type;
 
   console.log('File preview debug:', {
     fileName: file.name,
-    fileUrl: fileUrl,
+    originalFileUrl: file.file_url,
+    currentFileUrl: currentFileUrl,
     mimeType: file.mime_type,
     fileType: fileType,
     fileId: file.id,
-    hasFileUrl: !!fileUrl,
+    hasFileUrl: !!currentFileUrl,
     isOrphanedFile: isOrphanedFile,
-    filePath: file.file_path
+    filePath: file.file_path,
+    oneDriveInfo: oneDriveInfo
   });
 
   const handleLoad = () => {
@@ -106,19 +150,19 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   const handleError = () => {
     setIsLoading(false);
     setHasError(true);
-    console.error('Failed to load file:', fileUrl);
+    console.error('Failed to load file:', currentFileUrl);
   };
 
   const openInNewTab = () => {
-    if (fileUrl) {
-      window.open(fileUrl, '_blank');
+    if (currentFileUrl) {
+      window.open(currentFileUrl, '_blank');
     }
   };
 
   const downloadFile = () => {
-    if (fileUrl) {
+    if (currentFileUrl) {
       const link = document.createElement('a');
-      link.href = fileUrl;
+      link.href = currentFileUrl;
       link.download = file.name;
       document.body.appendChild(link);
       link.click();
@@ -138,6 +182,21 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
     }
   };
 
+  const refreshPreview = () => {
+    setIsLoading(true);
+    setHasError(false);
+    
+    // Force refresh by updating the cache-busting parameter
+    if (file.file_url) {
+      const url = new URL(file.file_url);
+      url.searchParams.set('t', Date.now().toString());
+      setCurrentFileUrl(url.toString());
+    }
+    
+    // Also refetch OneDrive info
+    queryClient.invalidateQueries({ queryKey: ['onedrive-info', file.id] });
+  };
+
   const renderPreview = () => {
     if (isOrphanedFile) {
       return (
@@ -155,7 +214,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
               <p>• File ID: {file.id}</p>
               <p>• MIME type: {file.mime_type || 'Not set'}</p>
               <p>• File path: {file.file_path || 'Not set'}</p>
-              <p>• Storage URL: {fileUrl || 'Missing'}</p>
+              <p>• Storage URL: {currentFileUrl || 'Missing'}</p>
               <p>• Workflow stage: {file.workflow_stage_id}</p>
             </div>
 
@@ -188,7 +247,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         return (
           <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
             <img
-              src={fileUrl}
+              src={currentFileUrl!}
               alt={file.name}
               className="max-w-full max-h-96 object-contain"
               onLoad={handleLoad}
@@ -201,7 +260,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         return (
           <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
             <video
-              src={fileUrl}
+              src={currentFileUrl!}
               controls
               className="max-w-full max-h-96"
               onLoadedData={handleLoad}
@@ -216,7 +275,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         return (
           <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
             <iframe
-              src={`${fileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+              src={`${currentFileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
               className="w-full h-full"
               title={file.name}
               onLoad={handleLoad}
@@ -226,7 +285,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         );
 
       case 'word':
-        const wordViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+        const wordViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(currentFileUrl!)}`;
         return (
           <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
             <iframe
@@ -240,7 +299,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
         );
 
       case 'excel':
-        const excelViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`;
+        const excelViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(currentFileUrl!)}`;
         return (
           <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
             <iframe
@@ -276,9 +335,14 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
           <div className="flex items-center justify-between">
             <DialogTitle className="text-lg font-semibold truncate pr-4">
               {file.name} {isOrphanedFile && <span className="text-red-500 text-sm">(Upload Failed)</span>}
+              {oneDriveInfo && <span className="text-blue-500 text-sm">(In OneDrive)</span>}
             </DialogTitle>
             <div className="flex items-center space-x-2">
-              {fileUrl && !isOrphanedFile && (
+              <Button onClick={refreshPreview} variant="outline" size="sm">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh
+              </Button>
+              {currentFileUrl && !isOrphanedFile && (
                 <>
                   <Button onClick={downloadFile} variant="outline" size="sm">
                     <Download className="mr-2 h-4 w-4" />
@@ -309,11 +373,12 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
           <DialogDescription className="text-sm text-gray-500">
             {(file.file_size || file.size) && `${file.file_size || file.size} • `}Modified {file.modifiedDate}
             {isOrphanedFile && <span className="text-red-500 ml-2">• Upload incomplete</span>}
+            {oneDriveInfo && <span className="text-blue-500 ml-2">• Latest version from OneDrive</span>}
           </DialogDescription>
         </DialogHeader>
         
         <div className="mt-4 overflow-auto">
-          {isLoading && fileUrl && !isOrphanedFile && (
+          {isLoading && currentFileUrl && !isOrphanedFile && (
             <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>

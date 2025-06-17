@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { toast } from '@/components/ui/sonner';
 import { WorkOrderFile } from '../types';
+import { supabase } from '@/integrations/supabase/client';
 
-// MSAL configuration - You'll need to set your actual client and tenant IDs
+// MSAL configuration with your actual client and tenant IDs
 const msalConfig = {
   auth: {
-    clientId: "YOUR_CLIENT_ID", // Replace with your actual client ID
-    authority: "https://login.microsoftonline.com/YOUR_TENANT_ID", // Replace with your tenant ID
+    clientId: "b059e7f3-5b24-41aa-aac7-2e3ce06dff93",
+    authority: "https://login.microsoftonline.com/674c622c-37ad-4e41-877a-0e070ebb7adc",
     redirectUri: window.location.origin,
   },
   cache: {
@@ -21,6 +22,8 @@ const msalInstance = new PublicClientApplication(msalConfig);
 
 export const useOffice365Integration = () => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const authenticateWithMicrosoft = async () => {
     try {
@@ -34,6 +37,7 @@ export const useOffice365Integration = () => {
       return response.accessToken;
     } catch (error) {
       console.error("Authentication failed:", error);
+      toast.error("Failed to authenticate with Microsoft");
       throw error;
     } finally {
       setIsAuthenticating(false);
@@ -42,36 +46,84 @@ export const useOffice365Integration = () => {
 
   const editInOffice365 = async (file: WorkOrderFile) => {
     try {
-      console.log(`Opening ${file.name} in Office 365...`);
-      // For now, just open Office 365 online
-      window.open('https://office.com', '_blank');
+      setIsUploading(true);
+      console.log(`Starting Office 365 edit workflow for ${file.name}...`);
+      
+      // Authenticate with Microsoft
+      const accessToken = await authenticateWithMicrosoft();
+      
+      // Call our Supabase Edge Function to handle the file upload to OneDrive
+      const { data, error } = await supabase.functions.invoke('office365-operations', {
+        body: {
+          action: 'upload',
+          fileId: file.id,
+          fileName: file.name,
+          fileUrl: file.url,
+          accessToken: accessToken
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.oneDriveUrl) {
+        // Open the file in Office 365 web app
+        window.open(data.oneDriveUrl, '_blank');
+        toast.success(`${file.name} opened in Office 365. Use "Syncback" when you're done editing.`);
+      } else {
+        throw new Error('Failed to get OneDrive URL');
+      }
     } catch (error) {
       console.error("Failed to open in Office 365:", error);
+      toast.error(`Failed to open ${file.name} in Office 365`);
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const syncBackFromOneDrive = async (file: WorkOrderFile) => {
     try {
+      setIsSyncing(true);
+      console.log(`Starting syncback workflow for ${file.name}...`);
+      
+      // Authenticate with Microsoft
       const accessToken = await authenticateWithMicrosoft();
       
-      // Here you would implement the logic to:
-      // 1. Download the updated file from OneDrive
-      // 2. Replace the local version
-      // 3. Delete the file from OneDrive
-      
-      console.log(`Syncing back ${file.name} from OneDrive`);
-      
-      // Placeholder for actual implementation
-      toast.success(`${file.name} has been synced back from OneDrive`);
+      // Call our Supabase Edge Function to handle the file download and replacement
+      const { data, error } = await supabase.functions.invoke('office365-operations', {
+        body: {
+          action: 'syncback',
+          fileId: file.id,
+          fileName: file.name,
+          accessToken: accessToken
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data?.success) {
+        toast.success(`${file.name} has been synced back from OneDrive`);
+        // Refresh the page to show updated file
+        window.location.reload();
+      } else {
+        throw new Error('Failed to sync back file');
+      }
     } catch (error) {
       console.error("Failed to sync back from OneDrive:", error);
       toast.error("Failed to sync back from OneDrive");
+    } finally {
+      setIsSyncing(false);
     }
   };
 
   return {
     editInOffice365,
     syncBackFromOneDrive,
-    isAuthenticating
+    isAuthenticating,
+    isUploading,
+    isSyncing
   };
 };

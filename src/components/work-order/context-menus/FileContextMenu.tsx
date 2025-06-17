@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MoreVertical, Eye, Edit, Copy, Move, Trash2, RefreshCw } from 'lucide-react';
+import { MoreVertical, Eye, Edit, Copy, Move, Trash2, RefreshCw, Upload, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { WorkOrderFile } from '../types';
@@ -14,7 +14,7 @@ interface FileContextMenuProps {
 }
 
 const FileContextMenu = ({ file, onDelete, onMove, onPreview }: FileContextMenuProps) => {
-  const { editInOffice365, syncBackFromOneDrive } = useOffice365Integration();
+  const { editInOffice365, syncBackFromOneDrive, isUploading, isSyncing } = useOffice365Integration();
   
   const getFileType = (fileName: string): 'word' | 'excel' | 'pdf' | 'other' => {
     const extension = fileName.split('.').pop()?.toLowerCase();
@@ -74,9 +74,14 @@ const FileContextMenu = ({ file, onDelete, onMove, onPreview }: FileContextMenuP
               e.stopPropagation();
               editInOffice365(file);
             }}
+            disabled={isUploading}
           >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit in Office 365
+            {isUploading ? (
+              <Upload className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Edit className="mr-2 h-4 w-4" />
+            )}
+            {isUploading ? 'Opening...' : 'Edit in Office 365'}
           </DropdownMenuItem>
         )}
         {canEditInOffice && (
@@ -86,9 +91,14 @@ const FileContextMenu = ({ file, onDelete, onMove, onPreview }: FileContextMenuP
               e.stopPropagation();
               syncBackFromOneDrive(file);
             }}
+            disabled={isSyncing}
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Syncback
+            {isSyncing ? (
+              <Download className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            {isSyncing ? 'Syncing...' : 'Syncback'}
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator className="bg-gray-700" />

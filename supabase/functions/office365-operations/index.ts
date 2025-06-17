@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -67,6 +66,28 @@ const handler = async (req: Request): Promise<Response> => {
       const uploadData = await uploadResponse.json();
       console.log('File uploaded to OneDrive:', uploadData);
 
+      // Create an edit link explicitly
+      const editLinkResponse = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${uploadData.id}/createLink`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'edit',
+          scope: 'organization'
+        }),
+      });
+
+      if (!editLinkResponse.ok) {
+        const errorText = await editLinkResponse.text();
+        console.error('Edit link creation error:', errorText);
+        throw new Error('Failed to create edit link');
+      }
+
+      const editLinkData = await editLinkResponse.json();
+      console.log('Edit link created:', editLinkData);
+
       // Store the OneDrive file info in our database
       const { error: dbError } = await supabase
         .from('onedrive_file_tracking')
@@ -83,12 +104,12 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error('Failed to track file in database');
       }
 
-      // Get the web URL for editing
-      const webUrl = uploadData.webUrl;
+      // Return the edit link instead of the generic webUrl
+      const editUrl = editLinkData.link.webUrl;
       
       return new Response(JSON.stringify({ 
         success: true, 
-        oneDriveUrl: webUrl,
+        oneDriveUrl: editUrl,
         oneDriveFileId: uploadData.id 
       }), {
         status: 200,

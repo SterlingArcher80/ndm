@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { toast } from '@/components/ui/sonner';
 import { WorkOrderFile } from '../types';
@@ -24,8 +24,28 @@ export const useOffice365Integration = () => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const initializeMsal = async () => {
+      try {
+        await msalInstance.initialize();
+        setIsInitialized(true);
+        console.log("MSAL instance initialized successfully");
+      } catch (error) {
+        console.error("Failed to initialize MSAL:", error);
+        toast.error("Failed to initialize Microsoft authentication");
+      }
+    };
+
+    initializeMsal();
+  }, []);
 
   const authenticateWithMicrosoft = async () => {
+    if (!isInitialized) {
+      throw new Error("MSAL not initialized yet");
+    }
+
     try {
       setIsAuthenticating(true);
       const loginRequest = {
@@ -45,6 +65,11 @@ export const useOffice365Integration = () => {
   };
 
   const editInOffice365 = async (file: WorkOrderFile) => {
+    if (!isInitialized) {
+      toast.error("Microsoft authentication is still initializing. Please try again in a moment.");
+      return;
+    }
+
     try {
       setIsUploading(true);
       console.log(`Starting Office 365 edit workflow for ${file.name}...`);
@@ -83,6 +108,11 @@ export const useOffice365Integration = () => {
   };
 
   const syncBackFromOneDrive = async (file: WorkOrderFile) => {
+    if (!isInitialized) {
+      toast.error("Microsoft authentication is still initializing. Please try again in a moment.");
+      return;
+    }
+
     try {
       setIsSyncing(true);
       console.log(`Starting syncback workflow for ${file.name}...`);
@@ -124,6 +154,7 @@ export const useOffice365Integration = () => {
     syncBackFromOneDrive,
     isAuthenticating,
     isUploading,
-    isSyncing
+    isSyncing,
+    isInitialized
   };
 };

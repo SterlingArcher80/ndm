@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -330,54 +329,59 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold truncate pr-4">
-              {file.name} {isOrphanedFile && <span className="text-red-500 text-sm">(Upload Failed)</span>}
-              {oneDriveInfo && <span className="text-blue-500 text-sm">(In OneDrive)</span>}
-            </DialogTitle>
-            <div className="flex items-center space-x-2">
-              <Button onClick={refreshPreview} variant="outline" size="sm">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh
-              </Button>
-              {currentFileUrl && !isOrphanedFile && (
-                <>
-                  <Button onClick={downloadFile} variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                  <Button onClick={openInNewTab} variant="outline" size="sm">
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Open
-                  </Button>
-                </>
-              )}
-              {!isOrphanedFile && (
-                <Button 
-                  onClick={handleDeleteFile} 
-                  variant="destructive" 
-                  size="sm"
-                  disabled={deleteFileMutation.isPending}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-lg font-semibold truncate">
+                  {file.name} {isOrphanedFile && <span className="text-red-500 text-sm">(Upload Failed)</span>}
+                  {oneDriveInfo && <span className="text-blue-500 text-sm">(In OneDrive)</span>}
+                </DialogTitle>
+                <DialogDescription className="text-sm text-gray-500 mt-1">
+                  {(file.file_size || file.size) && `${file.file_size || file.size} • `}Modified {file.modifiedDate}
+                  {isOrphanedFile && <span className="text-red-500 ml-2">• Upload incomplete</span>}
+                  {oneDriveInfo && <span className="text-blue-500 ml-2">• Latest version from OneDrive</span>}
+                </DialogDescription>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button onClick={refreshPreview} variant="outline" size="sm">
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh
                 </Button>
-              )}
-              <Button onClick={() => onOpenChange(false)} variant="ghost" size="sm">
-                <X className="h-4 w-4" />
-              </Button>
+                {currentFileUrl && !isOrphanedFile && (
+                  <>
+                    <Button onClick={downloadFile} variant="outline" size="sm">
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                    <Button onClick={openInNewTab} variant="outline" size="sm">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open
+                    </Button>
+                  </>
+                )}
+                {!isOrphanedFile && (
+                  <Button 
+                    onClick={handleDeleteFile} 
+                    variant="destructive" 
+                    size="sm"
+                    disabled={deleteFileMutation.isPending}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                )}
+                <Button onClick={() => onOpenChange(false)} variant="ghost" size="sm">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-          <DialogDescription className="text-sm text-gray-500">
-            {(file.file_size || file.size) && `${file.file_size || file.size} • `}Modified {file.modifiedDate}
-            {isOrphanedFile && <span className="text-red-500 ml-2">• Upload incomplete</span>}
-            {oneDriveInfo && <span className="text-blue-500 ml-2">• Latest version from OneDrive</span>}
-          </DialogDescription>
         </DialogHeader>
         
-        <div className="mt-4 overflow-auto">
+        <div className="mt-4 overflow-auto flex-1">
           {isLoading && currentFileUrl && !isOrphanedFile && (
             <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
               <div className="text-center">

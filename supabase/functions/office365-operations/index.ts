@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -130,6 +131,27 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error('File not found in OneDrive tracking');
       }
 
+      // Get the original file info from work_order_items to get the storage path and MIME type
+      const { data: originalFile, error: fileError } = await supabase
+        .from('work_order_items')
+        .select('file_url, mime_type, workflow_stage_id')
+        .eq('id', fileId)
+        .single();
+
+      if (fileError || !originalFile) {
+        throw new Error('Original file not found in database');
+      }
+
+      // Extract the storage path from the file_url
+      // file_url format: https://tmmtgnjwhpeackuieejd.supabase.co/storage/v1/object/public/work-order-files/path/to/file
+      const urlParts = originalFile.file_url.split('/storage/v1/object/public/work-order-files/');
+      if (urlParts.length !== 2) {
+        throw new Error('Invalid file URL format');
+      }
+      const storagePath = urlParts[1];
+
+      console.log('Storage path extracted:', storagePath);
+
       // Download the updated file from OneDrive
       const downloadResponse = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${trackingData.onedrive_file_id}/content`, {
         headers: {
@@ -138,32 +160,28 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       if (!downloadResponse.ok) {
+        const errorText = await downloadResponse.text();
+        console.error('OneDrive download error:', errorText);
         throw new Error('Failed to download file from OneDrive');
       }
 
       const updatedFileBlob = await downloadResponse.blob();
-      
+      console.log('Downloaded file size:', updatedFileBlob.size);
+
       // Upload the updated file back to our storage, replacing the original
-      const { data: originalFile } = await supabase
-        .from('work_order_items')
-        .select('file_path')
-        .eq('id', fileId)
-        .single();
+      const { error: uploadError } = await supabase.storage
+        .from('work-order-files')
+        .upload(storagePath, updatedFileBlob, {
+          upsert: true,
+          contentType: originalFile.mime_type || 'application/octet-stream'
+        });
 
-      if (originalFile?.file_path) {
-        // Upload the updated file to replace the original
-        const { error: uploadError } = await supabase.storage
-          .from('work-order-files')
-          .upload(originalFile.file_path, updatedFileBlob, {
-            upsert: true,
-            contentType: 'application/octet-stream'
-          });
-
-        if (uploadError) {
-          console.error('Storage upload error:', uploadError);
-          throw new Error('Failed to update file in storage');
-        }
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Failed to update file in storage: ${uploadError.message}`);
       }
+
+      console.log('File successfully updated in storage');
 
       // Delete the file from OneDrive
       const deleteResponse = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${trackingData.onedrive_file_id}`, {
@@ -175,13 +193,19 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (!deleteResponse.ok) {
         console.warn('Failed to delete file from OneDrive, but sync completed');
+      } else {
+        console.log('File successfully deleted from OneDrive');
       }
 
       // Remove the tracking record
-      await supabase
+      const { error: deleteTrackingError } = await supabase
         .from('onedrive_file_tracking')
         .delete()
         .eq('id', trackingData.id);
+
+      if (deleteTrackingError) {
+        console.warn('Failed to delete tracking record:', deleteTrackingError);
+      }
 
       return new Response(JSON.stringify({ success: true }), {
         status: 200,

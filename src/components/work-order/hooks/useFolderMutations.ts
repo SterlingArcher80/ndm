@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -54,10 +53,12 @@ export const useFolderMutations = (
 
   // Mutation for creating sub-folders specifically
   const createSubFolderMutation = useMutation({
-    mutationFn: async ({ name, workflowStageId, parentId }: { name: string; workflowStageId: string; parentId: string }) => {
-      const folderPath = `uploads/nested/${workflowStageId}/${name}`;
+    mutationFn: async ({ name, workflowStageId, parentId }: { name: string; workflowStageId: string; parentId: string | null }) => {
+      const folderPath = parentId 
+        ? `uploads/nested/${workflowStageId}/${name}`
+        : `uploads/${workflowStageId}/${name}`;
 
-      console.log(`📁 Creating sub-folder: ${name} in stage: ${workflowStageId} under parent: ${parentId}`);
+      console.log(`📁 Creating sub-folder: ${name} in stage: ${workflowStageId}${parentId ? ` under parent: ${parentId}` : ' at root level'}`);
 
       const { data, error } = await supabase
         .from('work_order_items')

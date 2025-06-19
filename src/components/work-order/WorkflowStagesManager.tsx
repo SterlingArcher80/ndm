@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,11 +87,12 @@ const WorkflowStagesManager = () => {
     
     console.log(`Creating sub-folder "${newSubFolderName}" in stage "${selectedStageForSubFolder}"`);
     
-    // Use the actual mutation to create the sub-folder
+    // Create sub-folder at root level within the workflow stage
+    // parent_id should be null for root-level sub-folders within a stage
     await createSubFolderMutation.mutateAsync({
       name: newSubFolderName.trim(),
       workflowStageId: selectedStageForSubFolder,
-      parentId: selectedStageForSubFolder // Use stage ID as parent for root-level sub-folders
+      parentId: null // null for root-level sub-folders within a stage
     });
     
     setIsSubFolderDialogOpen(false);

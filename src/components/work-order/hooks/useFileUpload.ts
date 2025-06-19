@@ -199,6 +199,43 @@ export const useFileUpload = () => {
     }
   });
 
+  const createFolderMutation = useMutation({
+    mutationFn: async ({ name, workflowStageId, parentId }: { name: string; workflowStageId: string; parentId?: string }) => {
+      const folderPath = parentId 
+        ? `uploads/nested/${name}`
+        : `uploads/${name}`;
+
+      console.log(`🗂️ Creating folder: ${name} in stage: ${workflowStageId}${parentId ? ` under parent: ${parentId}` : ''}`);
+
+      const { data, error } = await supabase
+        .from('work_order_items')
+        .insert({
+          name: name.trim(),
+          type: 'folder',
+          workflow_stage_id: workflowStageId,
+          parent_id: parentId || null,
+          file_path: folderPath
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating folder:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+      console.log(`✅ Folder "${data.name}" created successfully`);
+    },
+    onError: (error) => {
+      console.error('Failed to create folder:', error);
+      throw error;
+    }
+  });
+
   const uploadMultipleFiles = async (
     files: File[], 
     workflowStageId: string, 
@@ -256,9 +293,109 @@ export const useFileUpload = () => {
     }
   };
 
+  const handleFolderUpload = async (
+    items: DataTransferItemList,
+    workflowStageId: string,
+    parentId?: string,
+    baseFolderPath?: string
+  ) => {
+    console.log('📁 Processing folder upload with items:', items.length);
+    
+    const processedFolders = new Map<string, string>(); // folder path -> folder id
+    const filesToUpload: { file: File; parentFolderId?: string; folderPath: string }[] = [];
+
+    // Process all items and build folder structure
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      
+      if (item.kind === 'file') {
+        const entry = item.webkitGetAsEntry();
+        
+        if (entry) {
+          await processEntry(entry, workflowStageId, parentId, baseFolderPath || `uploads/stage-${workflowStageId}`);
+        }
+      }
+    }
+
+    async function processEntry(
+      entry: any,
+      workflowStageId: string,
+      currentParentId?: string,
+      currentPath?: string
+    ) {
+      if (entry.isFile) {
+        // Handle file
+        entry.file((file: File) => {
+          filesToUpload.push({
+            file,
+            parentFolderId: currentParentId,
+            folderPath: currentPath || `uploads/stage-${workflowStageId}`
+          });
+        });
+      } else if (entry.isDirectory) {
+        // Handle directory
+        const folderKey = `${currentParentId || 'root'}_${entry.name}`;
+        
+        if (!processedFolders.has(folderKey)) {
+          try {
+            const folderData = await createFolderMutation.mutateAsync({
+              name: entry.name,
+              workflowStageId,
+              parentId: currentParentId
+            });
+            
+            processedFolders.set(folderKey, folderData.id);
+            console.log(`📂 Created folder: ${entry.name} with ID: ${folderData.id}`);
+          } catch (error) {
+            console.error(`❌ Failed to create folder ${entry.name}:`, error);
+            return;
+          }
+        }
+
+        const folderId = processedFolders.get(folderKey);
+        const reader = entry.createReader();
+        
+        reader.readEntries(async (entries: any[]) => {
+          for (const childEntry of entries) {
+            await processEntry(
+              childEntry,
+              workflowStageId,
+              folderId,
+              `${currentPath}/${entry.name}`
+            );
+          }
+        });
+      }
+    }
+
+    // Wait a bit for all entries to be processed
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Upload all collected files
+    if (filesToUpload.length > 0) {
+      console.log(`🚀 Uploading ${filesToUpload.length} files from folders`);
+      
+      for (const { file, parentFolderId, folderPath } of filesToUpload) {
+        try {
+          await uploadFileMutation.mutateAsync({
+            file,
+            workflowStageId,
+            parentId: parentFolderId,
+            folderPath
+          });
+        } catch (error) {
+          console.error(`❌ Failed to upload file ${file.name}:`, error);
+        }
+      }
+      
+      toast.success(`Successfully processed folder structure with ${filesToUpload.length} files`);
+    }
+  };
+
   return {
     uploadFileMutation,
     uploadMultipleFiles,
+    handleFolderUpload,
     isUploading: uploadFileMutation.isPending
   };
 };

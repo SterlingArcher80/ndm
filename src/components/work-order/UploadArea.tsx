@@ -1,180 +1,145 @@
 
-import React, { useState } from 'react';
-import { Upload, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
+import { Upload, FolderPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { toast } from '@/components/ui/sonner';
-import { WorkOrderFolder } from './types';
+import { Button } from '@/components/ui/button';
 import { useFileUpload } from './hooks/useFileUpload';
+import { useWorkOrderActions } from './hooks/useWorkOrderActions';
 
 interface UploadAreaProps {
   selectedFolder: string | null;
-  folders: WorkOrderFolder[];
   currentPath: string[];
+  folders: any[];
 }
 
-const UploadArea = ({ selectedFolder, folders, currentPath }: UploadAreaProps) => {
-  const [isDragOverUpload, setIsDragOverUpload] = useState(false);
-  const [showUploadPrompt, setShowUploadPrompt] = useState(false);
-  const { uploadMultipleFiles, isUploading } = useFileUpload();
+const UploadArea = ({ selectedFolder, currentPath, folders }: UploadAreaProps) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const { uploadMultipleFiles, handleFolderUpload } = useFileUpload();
+  const { handleUploadClick, handleFileUpload } = useWorkOrderActions();
 
-  const getCurrentParentId = () => {
-    if (currentPath.length === 0) {
-      return undefined; // Root level
-    }
-    return currentPath[currentPath.length - 1]; // Current folder ID
-  };
-
-  const getCurrentFolderPath = () => {
-    if (!selectedFolder) return '';
-    
-    const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
-    if (!selectedWorkflowFolder) return '';
-    
-    if (currentPath.length === 0) {
-      return selectedWorkflowFolder.folderPath;
-    }
-    
-    // Build nested path based on current navigation
-    const pathSegments = [selectedWorkflowFolder.folderPath];
-    let currentItems = selectedWorkflowFolder.files;
-    
-    for (const pathId of currentPath) {
-      const folderItem = currentItems.find(item => item.id === pathId && item.type === 'folder');
-      if (folderItem && folderItem.subItems) {
-        pathSegments.push(folderItem.name);
-        // Filter subItems to only include WorkOrderFile types
-        currentItems = folderItem.subItems.filter(item => 
-          'workflow_stage_id' in item && 'modifiedDate' in item
-        );
-      }
-    }
-    
-    return pathSegments.join('/');
-  };
-
-  const handleUploadDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOverUpload(true);
-  };
+    setIsDragOver(true);
+  }, []);
 
-  const handleUploadDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOverUpload(false);
-  };
+    setIsDragOver(false);
+  }, []);
 
-  const handleUploadDrop = async (e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOverUpload(false);
+    setIsDragOver(false);
     
     if (!selectedFolder) {
-      setShowUploadPrompt(true);
-      setTimeout(() => setShowUploadPrompt(false), 3000);
       return;
     }
 
+    const { items } = e.dataTransfer;
     const files = Array.from(e.dataTransfer.files);
-    const parentId = getCurrentParentId();
-    const folderPath = getCurrentFolderPath();
     
-    if (files.length > 0) {
-      await uploadMultipleFiles(
-        files, 
-        selectedFolder, 
-        parentId,
-        folderPath
-      );
-    }
-  };
+    console.log('🎯 Drop detected:', {
+      itemsCount: items.length,
+      filesCount: files.length,
+      selectedFolder,
+      currentPath
+    });
 
-  const handleUploadClick = () => {
-    if (!selectedFolder) {
-      setShowUploadPrompt(true);
-      setTimeout(() => setShowUploadPrompt(false), 3000);
-      return;
-    }
-    document.getElementById('upload-input')?.click();
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!selectedFolder) {
-      setShowUploadPrompt(true);
-      setTimeout(() => setShowUploadPrompt(false), 3000);
-      return;
-    }
-
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      const parentId = getCurrentParentId();
-      const folderPath = getCurrentFolderPath();
-      
-      if (files.length > 0) {
-        await uploadMultipleFiles(
-          files, 
-          selectedFolder, 
-          parentId,
-          folderPath
-        );
+    // Check if we have folder structure (items with webkitGetAsEntry)
+    let hasFolders = false;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.webkitGetAsEntry) {
+        const entry = item.webkitGetAsEntry();
+        if (entry && entry.isDirectory) {
+          hasFolders = true;
+          break;
+        }
       }
     }
-    
-    // Reset the input
-    e.target.value = '';
-  };
 
-  const displayPath = getCurrentFolderPath();
+    if (hasFolders) {
+      console.log('📁 Folder structure detected, processing...');
+      const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
+      const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
+      let folderPath = selectedWorkflowFolder?.folderPath || `uploads/stage-${selectedFolder}`;
+      
+      if (currentPath.length > 0 && selectedWorkflowFolder) {
+        const pathSegments = [selectedWorkflowFolder.folderPath];
+        let currentItems = selectedWorkflowFolder.files;
+        
+        for (const pathId of currentPath) {
+          const folderItem = currentItems.find(item => item.id === pathId && item.type === 'folder');
+          if (folderItem) {
+            pathSegments.push(folderItem.name);
+            if (folderItem.subItems) {
+              currentItems = folderItem.subItems;
+            }
+          }
+        }
+        
+        folderPath = pathSegments.join('/');
+      }
+      
+      await handleFolderUpload(items, selectedFolder, parentId, folderPath);
+    } else if (files.length > 0) {
+      console.log('📄 Regular files detected, processing...');
+      await handleFileUpload(files, selectedFolder, currentPath, folders);
+    } else {
+      console.log('⚠️ No valid files or folders detected');
+    }
+  }, [selectedFolder, currentPath, folders, handleFolderUpload, handleFileUpload]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleFileUpload(e.target.files, selectedFolder, currentPath, folders);
+  }, [selectedFolder, currentPath, folders, handleFileUpload]);
 
   return (
-    <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-      <h3 className="text-sm font-medium text-gray-900 dark:text-gray-300 mb-3">Upload to Current Location</h3>
-      
-      {showUploadPrompt && (
-        <Alert className="mb-3 bg-orange-50 dark:bg-orange-900/50 border-orange-200 dark:border-orange-700">
-          <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-500" />
-          <AlertDescription className="text-orange-800 dark:text-orange-300 text-sm">
-            Please select a workflow stage first
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <Card 
-        className={`border-2 border-dashed transition-all duration-200 cursor-pointer ${
-          isDragOverUpload 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' 
-            : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:border-gray-400 dark:hover:border-gray-600'
-        } ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
-        onDragOver={handleUploadDragOver}
-        onDragLeave={handleUploadDragLeave}
-        onDrop={handleUploadDrop}
-        onClick={handleUploadClick}
-      >
-        <div className="p-6 text-center">
-          {isUploading ? (
-            <Loader2 className="h-8 w-8 mx-auto mb-2 text-blue-500 dark:text-blue-400 animate-spin" />
-          ) : (
-            <Upload className={`h-8 w-8 mx-auto mb-2 ${
-              isDragOverUpload ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
-            }`} />
-          )}
-          <p className="text-sm text-gray-700 dark:text-gray-300 mb-1">
-            {isUploading ? 'Uploading files...' : 'Drop files here'}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-500">
-            {selectedFolder ? `→ ${displayPath}` : 'Select a stage first'}
-          </p>
+    <Card 
+      className={`border-2 border-dashed transition-all duration-200 ${
+        isDragOver 
+          ? 'border-blue-500 bg-blue-500/10' 
+          : 'border-gray-600 hover:border-gray-500'
+      } bg-gray-800`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <div className="p-8 text-center">
+        <div className="flex justify-center items-center mb-4">
+          <Upload className={`h-12 w-12 mr-2 ${
+            isDragOver ? 'text-blue-400' : 'text-gray-400'
+          }`} />
+          <FolderPlus className={`h-12 w-12 ${
+            isDragOver ? 'text-blue-400' : 'text-gray-400'
+          }`} />
         </div>
-      </Card>
-
-      <input
-        id="upload-input"
-        type="file"
-        multiple
-        className="hidden"
-        onChange={handleFileSelect}
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif"
-        disabled={isUploading}
-      />
-    </div>
+        <h3 className="text-lg font-medium text-white mb-2">
+          Drop files or folders here
+        </h3>
+        <p className="text-gray-400 mb-4">
+          Support for individual files, folders, and nested folder structures
+        </p>
+        <div className="space-x-2">
+          <Button 
+            onClick={() => handleUploadClick(selectedFolder, currentPath, folders)}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            disabled={!selectedFolder}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Choose Files
+          </Button>
+        </div>
+        <input
+          id="upload-input"
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleInputChange}
+          accept="*/*"
+        />
+      </div>
+    </Card>
   );
 };
 

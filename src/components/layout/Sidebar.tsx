@@ -1,4 +1,5 @@
-import { LogOut, Settings, Sun, Moon, Monitor } from 'lucide-react';
+
+import { LogOut, Settings, Sun, Moon, Monitor, Package, FileText, FolderOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -11,6 +12,7 @@ import {
   SidebarMenuItem,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { useThemePreference } from '../hooks/useThemePreference';
@@ -55,6 +57,25 @@ const ThemeSelector = () => {
   );
 };
 
+// Navigation menu items
+const navigationItems = [
+  {
+    title: "Inventory",
+    url: "/inventory",
+    icon: Package,
+  },
+  {
+    title: "Work Orders",
+    url: "/work-orders",
+    icon: FileText,
+  },
+  {
+    title: "Documents",
+    url: "/documents",
+    icon: FolderOpen,
+  },
+];
+
 const AppSidebar = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -73,15 +94,35 @@ const AppSidebar = () => {
   };
 
   return (
-    // Remove defaultOpen prop; not valid for Sidebar
     <Sidebar>
       <SidebarHeader className="p-4 pb-0">
         <h2 className="text-lg font-semibold">Nucleus</h2>
         <p className="text-sm text-gray-600">- powered by DMSI</p>
       </SidebarHeader>
       <SidebarContent className="bg-gray-100 dark:bg-gray-900">
-        {/* Theme selector above Settings */}
+        {/* Theme selector above main navigation */}
         <ThemeSelector />
+        
+        {/* Main Navigation */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navigationItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link to={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Settings Section */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>

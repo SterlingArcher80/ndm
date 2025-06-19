@@ -18,7 +18,7 @@ export const useWorkOrderActions = () => {
   };
 
   const handleFileUpload = async (
-    files: FileList | null, 
+    files: FileList | File[] | null, 
     selectedFolder: string | null,
     currentPath: string[] = [],
     folders: any[] = []
@@ -29,7 +29,8 @@ export const useWorkOrderActions = () => {
     }
 
     if (files && files.length > 0) {
-      const fileArray = Array.from(files);
+      // Convert FileList to File[] if needed
+      const fileArray = Array.isArray(files) ? files : Array.from(files);
       
       // Determine parent ID based on current path
       const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;

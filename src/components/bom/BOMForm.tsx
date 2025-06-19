@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,19 +76,25 @@ const BOMForm = () => {
   };
 
   const renderCustomField = (field: any) => {
-    const fieldName = `custom_fields.${field.name}`;
-    
     switch (field.type) {
       case 'select':
         return (
           <FormField
             key={field.id}
             control={form.control}
-            name={fieldName}
+            name="custom_fields"
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.label}</FormLabel>
-                <Select onValueChange={formField.onChange} defaultValue={formField.value}>
+                <Select 
+                  onValueChange={(value) => {
+                    form.setValue('custom_fields', {
+                      ...form.getValues('custom_fields'),
+                      [field.name]: value
+                    });
+                  }} 
+                  defaultValue={form.getValues(`custom_fields.${field.name}`) || ''}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
@@ -111,15 +118,20 @@ const BOMForm = () => {
           <FormField
             key={field.id}
             control={form.control}
-            name={fieldName}
+            name="custom_fields"
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.label}</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    {...formField}
-                    onChange={(e) => formField.onChange(parseFloat(e.target.value) || 0)}
+                    defaultValue={form.getValues(`custom_fields.${field.name}`) || ''}
+                    onChange={(e) => {
+                      form.setValue('custom_fields', {
+                        ...form.getValues('custom_fields'),
+                        [field.name]: parseFloat(e.target.value) || 0
+                      });
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -132,12 +144,21 @@ const BOMForm = () => {
           <FormField
             key={field.id}
             control={form.control}
-            name={fieldName}
+            name="custom_fields"
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.label}</FormLabel>
                 <FormControl>
-                  <Input type="date" {...formField} />
+                  <Input 
+                    type="date" 
+                    defaultValue={form.getValues(`custom_fields.${field.name}`) || ''}
+                    onChange={(e) => {
+                      form.setValue('custom_fields', {
+                        ...form.getValues('custom_fields'),
+                        [field.name]: e.target.value
+                      });
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -149,12 +170,20 @@ const BOMForm = () => {
           <FormField
             key={field.id}
             control={form.control}
-            name={fieldName}
+            name="custom_fields"
             render={({ field: formField }) => (
               <FormItem>
                 <FormLabel>{field.label}</FormLabel>
                 <FormControl>
-                  <Input {...formField} />
+                  <Input 
+                    defaultValue={form.getValues(`custom_fields.${field.name}`) || ''}
+                    onChange={(e) => {
+                      form.setValue('custom_fields', {
+                        ...form.getValues('custom_fields'),
+                        [field.name]: e.target.value
+                      });
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

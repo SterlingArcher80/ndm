@@ -1,4 +1,5 @@
-import { LogOut, Settings, Sun, Moon, Monitor, Package, FileText, FolderOpen, Layers } from 'lucide-react';
+
+import { LogOut, Settings, Sun, Moon, Monitor, Package, FileText, Factory } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -56,7 +57,7 @@ const ThemeSelector = () => {
   );
 };
 
-// Navigation menu items
+// Navigation menu items - matching top navigation
 const navigationItems = [
   {
     title: "Inventory",
@@ -64,19 +65,14 @@ const navigationItems = [
     icon: Package,
   },
   {
-    title: "BOM",
-    url: "/bom",
-    icon: Layers,
-  },
-  {
     title: "Work Orders",
     url: "/work-orders",
     icon: FileText,
   },
   {
-    title: "Documents",
-    url: "/documents",
-    icon: FolderOpen,
+    title: "Manufacturing",
+    url: "/analytics",
+    icon: Factory,
   },
 ];
 

@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { FolderOpen, FileText } from 'lucide-react';
+import { FolderOpen, FileText, Lock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { WorkOrderFile } from './types';
 import FileContextMenu from './context-menus/FileContextMenu';
@@ -9,6 +8,7 @@ import FilePreviewDialog from './FilePreviewDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { useFolderMutations } from './hooks/useFolderMutations';
 
 interface WorkOrderGridProps {
   items: WorkOrderFile[];
@@ -34,6 +34,14 @@ const WorkOrderGrid = ({
   }>({ open: false, file: null });
   const queryClient = useQueryClient();
 
+  // Get the toggle lock mutation from useFolderMutations
+  const { toggleFolderLockMutation } = useFolderMutations(
+    () => {}, // setShowNewFolderDialog - not used here
+    () => {}, // setNewFolderName - not used here
+    () => {}, // setDeleteDialog - not used here
+    () => {}  // setDeleteConfirmation - not used here
+  );
+
   const moveToFolderMutation = useMutation({
     mutationFn: async ({ itemId, targetFolderId }: { itemId: string; targetFolderId: string }) => {
       const { error } = await supabase
@@ -55,6 +63,13 @@ const WorkOrderGrid = ({
       toast.error('Failed to move item to folder');
     }
   });
+
+  const handleToggleLock = (folder: WorkOrderFile) => {
+    toggleFolderLockMutation.mutate({
+      folderId: folder.id,
+      isLocked: !folder.is_locked
+    });
+  };
 
   const handleDragStart = (e: React.DragEvent, itemId: string) => {
     e.dataTransfer.setData('text/plain', itemId);
@@ -119,13 +134,23 @@ const WorkOrderGrid = ({
             <div className="p-4">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center">
-                  {item.type === 'folder' ? (
-                    <FolderOpen className="h-8 w-8 text-blue-400 mr-3" />
-                  ) : (
-                    <FileText className="h-8 w-8 text-gray-400 mr-3" />
-                  )}
+                  <div className="relative">
+                    {item.type === 'folder' ? (
+                      <FolderOpen className="h-8 w-8 text-blue-400 mr-3" />
+                    ) : (
+                      <FileText className="h-8 w-8 text-gray-400 mr-3" />
+                    )}
+                    {item.type === 'folder' && item.is_locked && (
+                      <Lock className="h-3 w-3 text-yellow-500 absolute -top-1 -right-1" />
+                    )}
+                  </div>
                   <div>
-                    <h3 className="font-medium text-white text-sm">{item.name}</h3>
+                    <h3 className="font-medium text-white text-sm flex items-center">
+                      {item.name}
+                      {item.type === 'folder' && item.is_locked && (
+                        <Lock className="h-3 w-3 text-yellow-500 ml-2" />
+                      )}
+                    </h3>
                     <p className="text-xs text-gray-400 mt-1">
                       {item.size && `${item.size} • `}Modified {item.modifiedDate}
                     </p>
@@ -148,6 +173,7 @@ const WorkOrderGrid = ({
                     folder={item} 
                     onDelete={onDeleteFolder}
                     onMove={onMoveFolder}
+                    onToggleLock={handleToggleLock}
                   />
                 )}
               </div>

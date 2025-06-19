@@ -50,7 +50,8 @@ const WorkOrderRepository = () => {
           file_size: item.file_size,
           file_path: item.file_path,
           workflow_stage_id: item.workflow_stage_id,
-          parent_id: item.parent_id
+          parent_id: item.parent_id,
+          is_locked: item.is_locked
         });
       });
       

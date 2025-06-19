@@ -89,6 +89,35 @@ export const useFolderMutations = (
     }
   });
 
+  // Mutation for toggling folder lock status
+  const toggleFolderLockMutation = useMutation({
+    mutationFn: async ({ folderId, isLocked }: { folderId: string; isLocked: boolean }) => {
+      console.log(`${isLocked ? 'Locking' : 'Unlocking'} folder: ${folderId}`);
+      
+      const { data, error } = await supabase
+        .from('work_order_items')
+        .update({ is_locked: isLocked })
+        .eq('id', folderId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error toggling folder lock:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+      toast.success(`Folder "${data.name}" has been ${data.is_locked ? 'locked' : 'unlocked'}`);
+    },
+    onError: (error) => {
+      console.error('Failed to toggle folder lock:', error);
+      toast.error('Failed to update folder lock status');
+    }
+  });
+
   // Mutation for deleting items (including files from storage)
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
@@ -102,6 +131,11 @@ export const useFolderMutations = (
       if (fetchError) {
         console.error('Error fetching item:', fetchError);
         throw fetchError;
+      }
+
+      // Check if folder is locked before allowing deletion
+      if (item.type === 'folder' && item.is_locked) {
+        throw new Error('Cannot delete a locked folder. Please unlock it first.');
       }
 
       // If it's a file with a storage URL, delete from storage first
@@ -142,13 +176,14 @@ export const useFolderMutations = (
     },
     onError: (error) => {
       console.error('Failed to delete item:', error);
-      toast.error('Failed to delete item');
+      toast.error(error.message || 'Failed to delete item');
     }
   });
 
   return {
     createFolderMutation,
     createSubFolderMutation,
-    deleteItemMutation
+    deleteItemMutation,
+    toggleFolderLockMutation
   };
 };

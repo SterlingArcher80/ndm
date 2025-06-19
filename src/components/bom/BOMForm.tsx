@@ -1,5 +1,5 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -8,60 +8,70 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useWorkOrderFields } from './hooks/useWorkOrderFields';
-import { useWorkOrderMutations } from './hooks/useWorkOrderMutations';
-import { useBOMs } from './hooks/useBOMs';
+import { Plus, Trash2 } from 'lucide-react';
+import { useBOMFields } from './hooks/useBOMFields';
+import { useBOMMutations } from './hooks/useBOMMutations';
+import { useInventoryItems } from './hooks/useInventoryItems';
 import { useToast } from '@/hooks/use-toast';
 
-const workOrderSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+const bomSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  status: z.enum(['open', 'in_progress', 'completed', 'cancelled']),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']),
-  bom_id: z.string().optional(),
+  version: z.string().optional(),
+  status: z.enum(['draft', 'active', 'archived']),
   custom_fields: z.record(z.any()).default({}),
+  bom_items: z.array(z.object({
+    inventory_item_id: z.string().min(1, 'Inventory item is required'),
+    quantity_required: z.number().min(0.01, 'Quantity must be greater than 0'),
+    notes: z.string().optional(),
+  })).default([]),
 });
 
-type WorkOrderFormData = z.infer<typeof workOrderSchema>;
+type BOMFormData = z.infer<typeof bomSchema>;
 
-const WorkOrderForm = () => {
+const BOMForm = () => {
   const { toast } = useToast();
-  const { data: workOrderFields = [] } = useWorkOrderFields();
-  const { data: boms = [] } = useBOMs();
-  const { createWorkOrder } = useWorkOrderMutations();
+  const { data: bomFields = [] } = useBOMFields();
+  const { data: inventoryItems = [] } = useInventoryItems();
+  const { createBOM } = useBOMMutations();
 
-  const form = useForm<WorkOrderFormData>({
-    resolver: zodResolver(workOrderSchema),
+  const form = useForm<BOMFormData>({
+    resolver: zodResolver(bomSchema),
     defaultValues: {
-      title: '',
+      name: '',
       description: '',
-      status: 'open',
-      priority: 'medium',
-      bom_id: '',
+      version: '1.0',
+      status: 'draft',
       custom_fields: {},
+      bom_items: [{ inventory_item_id: '', quantity_required: 1, notes: '' }],
     },
   });
 
-  const onSubmit = async (data: WorkOrderFormData) => {
+  const { fields: bomItemFields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'bom_items',
+  });
+
+  const onSubmit = async (data: BOMFormData) => {
     try {
-      const workOrderData = {
-        ...data,
-        bom_id: data.bom_id || null,
-      };
-      await createWorkOrder.mutateAsync(workOrderData);
+      await createBOM.mutateAsync(data);
       toast({
         title: 'Success',
-        description: 'Work order created successfully',
+        description: 'BOM created successfully',
       });
       form.reset();
     } catch (error) {
-      console.error('Error creating work order:', error);
+      console.error('Error creating BOM:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create work order',
+        description: 'Failed to create BOM',
         variant: 'destructive',
       });
     }
+  };
+
+  const addBOMItem = () => {
+    append({ inventory_item_id: '', quantity_required: 1, notes: '' });
   };
 
   const renderCustomField = (field: any) => {
@@ -158,7 +168,7 @@ const WorkOrderForm = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Create New Work Order</CardTitle>
+          <CardTitle>Create New BOM</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -166,10 +176,10 @@ const WorkOrderForm = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="title"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Title *</FormLabel>
+                      <FormLabel>Name *</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -180,23 +190,13 @@ const WorkOrderForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="priority"
+                  name="version"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Priority</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                          <SelectItem value="urgent">Urgent</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <FormLabel>Version</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -215,36 +215,9 @@ const WorkOrderForm = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="open">Open</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="bom_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>BOM (Optional)</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a BOM" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="">No BOM</SelectItem>
-                          {boms.map((bom) => (
-                            <SelectItem key={bom.id} value={bom.id}>
-                              {bom.name} (v{bom.version})
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="archived">Archived</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -268,17 +241,104 @@ const WorkOrderForm = () => {
               />
 
               {/* Custom Fields */}
-              {workOrderFields.length > 0 && (
+              {bomFields.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-medium">Custom Fields</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {workOrderFields.map(renderCustomField)}
+                    {bomFields.map(renderCustomField)}
                   </div>
                 </div>
               )}
 
-              <Button type="submit" disabled={createWorkOrder.isPending}>
-                {createWorkOrder.isPending ? 'Creating...' : 'Create Work Order'}
+              {/* BOM Items */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-medium">BOM Items</h3>
+                  <Button type="button" onClick={addBOMItem} variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Item
+                  </Button>
+                </div>
+
+                {bomItemFields.map((item, index) => (
+                  <Card key={item.id} className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <FormField
+                        control={form.control}
+                        name={`bom_items.${index}.inventory_item_id`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Inventory Item *</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select item" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {inventoryItems.map((item) => (
+                                  <SelectItem key={item.id} value={item.id}>
+                                    {item.name} ({item.sku})
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`bom_items.${index}.quantity_required`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Quantity *</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                {...field}
+                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`bom_items.${index}.notes`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Notes</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="flex items-end">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => remove(index)}
+                          disabled={bomItemFields.length === 1}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              <Button type="submit" disabled={createBOM.isPending}>
+                {createBOM.isPending ? 'Creating...' : 'Create BOM'}
               </Button>
             </form>
           </Form>
@@ -288,4 +348,4 @@ const WorkOrderForm = () => {
   );
 };
 
-export default WorkOrderForm;
+export default BOMForm;

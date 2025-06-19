@@ -9,6 +9,123 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bom_fields: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean
+          label: string
+          name: string
+          options: string[] | null
+          order_position: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label: string
+          name: string
+          options?: string[] | null
+          order_position?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label?: string
+          name?: string
+          options?: string[] | null
+          order_position?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bom_items: {
+        Row: {
+          bom_id: string
+          created_at: string
+          id: string
+          inventory_item_id: string
+          notes: string | null
+          quantity_required: number
+          updated_at: string
+        }
+        Insert: {
+          bom_id: string
+          created_at?: string
+          id?: string
+          inventory_item_id: string
+          notes?: string | null
+          quantity_required?: number
+          updated_at?: string
+        }
+        Update: {
+          bom_id?: string
+          created_at?: string
+          id?: string
+          inventory_item_id?: string
+          notes?: string | null
+          quantity_required?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bom_items_bom_id_fkey"
+            columns: ["bom_id"]
+            isOneToOne: false
+            referencedRelation: "boms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bom_items_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boms: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json | null
+          description: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json | null
+          description?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json | null
+          description?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -313,6 +430,7 @@ export type Database = {
       work_orders: {
         Row: {
           assigned_to: string | null
+          bom_id: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json | null
@@ -325,6 +443,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          bom_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json | null
@@ -337,6 +456,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          bom_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json | null
@@ -347,7 +467,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "work_orders_bom_id_fkey"
+            columns: ["bom_id"]
+            isOneToOne: false
+            referencedRelation: "boms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workflow_stages: {
         Row: {

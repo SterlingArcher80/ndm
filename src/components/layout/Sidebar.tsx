@@ -1,5 +1,4 @@
-
-import { LogOut, Settings, Sun, Moon, Monitor, Package, FileText, FolderOpen } from 'lucide-react';
+import { LogOut, Settings, Sun, Moon, Monitor, Package, FileText, FolderOpen, Layers } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -63,6 +62,11 @@ const navigationItems = [
     title: "Inventory",
     url: "/inventory",
     icon: Package,
+  },
+  {
+    title: "BOM",
+    url: "/bom",
+    icon: Layers,
   },
   {
     title: "Work Orders",

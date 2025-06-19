@@ -345,7 +345,7 @@ const WorkflowStagesManager = () => {
                 {createSubFolderMutation.isPending ? 'Creating...' : 'Create Sub-Folder'}
               </Button>
             </DialogFooter>
-          </Dialog>
+          </DialogContent>
         </Dialog>
       </CardContent>
     </Card>

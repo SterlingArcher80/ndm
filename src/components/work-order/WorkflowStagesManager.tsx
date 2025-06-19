@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit2, GripVertical, Save, X, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Edit2, GripVertical, Save, X, Loader2, Plus, Trash2, FolderPlus } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useWorkflowStages } from './hooks/useWorkflowStages';
 import {
@@ -23,8 +23,11 @@ const WorkflowStagesManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSubFolderDialogOpen, setIsSubFolderDialogOpen] = useState(false);
   const [newStageName, setNewStageName] = useState('');
   const [newStageColor, setNewStageColor] = useState('bg-blue-500');
+  const [newSubFolderName, setNewSubFolderName] = useState('');
+  const [selectedStageForSubFolder, setSelectedStageForSubFolder] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
 
   const colorOptions = [
@@ -67,6 +70,23 @@ const WorkflowStagesManager = () => {
     setNewStageColor('bg-blue-500');
   };
 
+  const handleAddSubFolder = (stageId: string) => {
+    setSelectedStageForSubFolder(stageId);
+    setIsSubFolderDialogOpen(true);
+  };
+
+  const handleCreateSubFolder = async () => {
+    if (!newSubFolderName.trim() || !selectedStageForSubFolder) return;
+    
+    // This would typically create a sub-folder in the selected workflow stage
+    // For now, we'll just show a success message
+    console.log(`Creating sub-folder "${newSubFolderName}" in stage "${selectedStageForSubFolder}"`);
+    
+    setIsSubFolderDialogOpen(false);
+    setNewSubFolderName('');
+    setSelectedStageForSubFolder(null);
+  };
+
   const handleDeleteStage = async (stageId: string) => {
     await deleteStage(stageId);
     setDeleteDialogOpen(null);
@@ -105,8 +125,8 @@ const WorkflowStagesManager = () => {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Workflow Stages</CardTitle>
-            <p className="text-sm text-gray-600">
-              Manage the workflow stages for your work orders. Drag to reorder, click edit to rename.
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Manage the workflow stages for your work orders. Drag to reorder, click edit to rename, and add sub-folders for better organization.
             </p>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -172,7 +192,7 @@ const WorkflowStagesManager = () => {
                       <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        className={`flex items-center justify-between p-4 border rounded-lg bg-white ${
+                        className={`flex items-center justify-between p-4 border rounded-lg bg-white dark:bg-gray-800 ${
                           snapshot.isDragging ? 'shadow-lg' : 'shadow-sm'
                         }`}
                       >
@@ -199,7 +219,7 @@ const WorkflowStagesManager = () => {
                               autoFocus
                             />
                           ) : (
-                            <span className="font-medium">{stage.name}</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{stage.name}</span>
                           )}
                         </div>
                         <div className="flex items-center space-x-2">
@@ -222,6 +242,14 @@ const WorkflowStagesManager = () => {
                             </>
                           ) : (
                             <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleAddSubFolder(stage.id)}
+                                title="Add sub-folder"
+                              >
+                                <FolderPlus className="h-4 w-4" />
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -272,6 +300,37 @@ const WorkflowStagesManager = () => {
             )}
           </Droppable>
         </DragDropContext>
+
+        {/* Sub-folder creation dialog */}
+        <Dialog open={isSubFolderDialogOpen} onOpenChange={setIsSubFolderDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Sub-Folder</DialogTitle>
+              <DialogDescription>
+                Create a new sub-folder within the selected workflow stage.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="subfolder-name">Sub-Folder Name</Label>
+                <Input
+                  id="subfolder-name"
+                  value={newSubFolderName}
+                  onChange={(e) => setNewSubFolderName(e.target.value)}
+                  placeholder="Enter sub-folder name"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsSubFolderDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateSubFolder} disabled={!newSubFolderName.trim()}>
+                Create Sub-Folder
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

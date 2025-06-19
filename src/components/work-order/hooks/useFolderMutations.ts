@@ -11,12 +11,14 @@ export const useFolderMutations = (
 ) => {
   const queryClient = useQueryClient();
 
-  // Mutation for creating new folder
+  // Mutation for creating new folder (including sub-folders)
   const createFolderMutation = useMutation({
     mutationFn: async ({ name, workflowStageId, parentId }: { name: string; workflowStageId: string; parentId?: string }) => {
       const folderPath = parentId 
         ? `uploads/nested/${name}`
         : `uploads/${name}`;
+
+      console.log(`🗂️ Creating ${parentId ? 'sub-folder' : 'folder'}: ${name} in stage: ${workflowStageId}${parentId ? ` under parent: ${parentId}` : ''}`);
 
       const { data, error } = await supabase
         .from('work_order_items')
@@ -39,13 +41,50 @@ export const useFolderMutations = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
-      toast.success(`Folder "${data.name}" created successfully`);
+      const folderType = data.parent_id ? 'Sub-folder' : 'Folder';
+      toast.success(`${folderType} "${data.name}" created successfully`);
       setShowNewFolderDialog(false);
       setNewFolderName('');
     },
     onError: (error) => {
       console.error('Failed to create folder:', error);
       toast.error('Failed to create folder');
+    }
+  });
+
+  // Mutation for creating sub-folders specifically
+  const createSubFolderMutation = useMutation({
+    mutationFn: async ({ name, workflowStageId, parentId }: { name: string; workflowStageId: string; parentId: string }) => {
+      const folderPath = `uploads/nested/${workflowStageId}/${name}`;
+
+      console.log(`📁 Creating sub-folder: ${name} in stage: ${workflowStageId} under parent: ${parentId}`);
+
+      const { data, error } = await supabase
+        .from('work_order_items')
+        .insert({
+          name: name.trim(),
+          type: 'folder',
+          workflow_stage_id: workflowStageId,
+          parent_id: parentId,
+          file_path: folderPath
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating sub-folder:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+      toast.success(`Sub-folder "${data.name}" created successfully`);
+    },
+    onError: (error) => {
+      console.error('Failed to create sub-folder:', error);
+      toast.error('Failed to create sub-folder');
     }
   });
 
@@ -108,6 +147,7 @@ export const useFolderMutations = (
 
   return {
     createFolderMutation,
+    createSubFolderMutation,
     deleteItemMutation
   };
 };

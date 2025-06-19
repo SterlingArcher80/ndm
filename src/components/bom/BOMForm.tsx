@@ -2,7 +2,7 @@
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import * z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -76,119 +76,81 @@ const BOMForm = () => {
   };
 
   const renderCustomField = (field: any) => {
+    const fieldPath = `custom_fields.${field.name}` as const;
+    
     switch (field.type) {
       case 'select':
         return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name="custom_fields"
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.label}</FormLabel>
-                <Select 
-                  onValueChange={(value) => {
-                    form.setValue('custom_fields', {
-                      ...form.getValues('custom_fields'),
-                      [field.name]: value
-                    });
-                  }} 
-                  defaultValue={form.getValues(`custom_fields.${field.name}`) || ''}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {field.options?.map((option: string) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div key={field.id} className="space-y-2">
+            <label className="text-sm font-medium">{field.label}</label>
+            <Select 
+              onValueChange={(value) => {
+                form.setValue('custom_fields', {
+                  ...form.getValues('custom_fields'),
+                  [field.name]: value
+                });
+              }} 
+              defaultValue={form.getValues('custom_fields')?.[field.name] || ''}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {field.options?.map((option: string) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         );
       case 'number':
         return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name="custom_fields"
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.label}</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    defaultValue={form.getValues(`custom_fields.${field.name}`) || ''}
-                    onChange={(e) => {
-                      form.setValue('custom_fields', {
-                        ...form.getValues('custom_fields'),
-                        [field.name]: parseFloat(e.target.value) || 0
-                      });
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div key={field.id} className="space-y-2">
+            <label className="text-sm font-medium">{field.label}</label>
+            <Input
+              type="number"
+              defaultValue={form.getValues('custom_fields')?.[field.name] || ''}
+              onChange={(e) => {
+                form.setValue('custom_fields', {
+                  ...form.getValues('custom_fields'),
+                  [field.name]: parseFloat(e.target.value) || 0
+                });
+              }}
+            />
+          </div>
         );
       case 'date':
         return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name="custom_fields"
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.label}</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="date" 
-                    defaultValue={form.getValues(`custom_fields.${field.name}`) || ''}
-                    onChange={(e) => {
-                      form.setValue('custom_fields', {
-                        ...form.getValues('custom_fields'),
-                        [field.name]: e.target.value
-                      });
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div key={field.id} className="space-y-2">
+            <label className="text-sm font-medium">{field.label}</label>
+            <Input 
+              type="date" 
+              defaultValue={form.getValues('custom_fields')?.[field.name] || ''}
+              onChange={(e) => {
+                form.setValue('custom_fields', {
+                  ...form.getValues('custom_fields'),
+                  [field.name]: e.target.value
+                });
+              }}
+            />
+          </div>
         );
       default:
         return (
-          <FormField
-            key={field.id}
-            control={form.control}
-            name="custom_fields"
-            render={({ field: formField }) => (
-              <FormItem>
-                <FormLabel>{field.label}</FormLabel>
-                <FormControl>
-                  <Input 
-                    defaultValue={form.getValues(`custom_fields.${field.name}`) || ''}
-                    onChange={(e) => {
-                      form.setValue('custom_fields', {
-                        ...form.getValues('custom_fields'),
-                        [field.name]: e.target.value
-                      });
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div key={field.id} className="space-y-2">
+            <label className="text-sm font-medium">{field.label}</label>
+            <Input 
+              defaultValue={form.getValues('custom_fields')?.[field.name] || ''}
+              onChange={(e) => {
+                form.setValue('custom_fields', {
+                  ...form.getValues('custom_fields'),
+                  [field.name]: e.target.value
+                });
+              }}
+            />
+          </div>
         );
     }
   };

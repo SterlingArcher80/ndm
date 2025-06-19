@@ -16,7 +16,7 @@ const TopNavbar = () => {
   const location = useLocation();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white dark:bg-gray-950 px-6">
+    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         {/* Page title removed as requested */}
@@ -29,11 +29,11 @@ const TopNavbar = () => {
           return (
             <Link to={path} key={label}>
               <Button
-                variant={isActive ? "secondary" : "ghost"}
+                variant={isActive ? "default" : "ghost"}
                 className={`flex items-center gap-2 ${
                   isActive
-                    ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-gray-50"
-                    : ""
+                    ? "bg-primary text-primary-foreground"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
               >
                 <Icon className="h-5 w-5" />

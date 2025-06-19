@@ -34,17 +34,17 @@ const ThemeSelector = () => {
 
   return (
     <div className="mb-4">
-      <label className="block text-xs text-gray-500 pl-1 mb-1">Theme</label>
+      <label className="block text-xs text-muted-foreground pl-1 mb-1">Theme</label>
       <div className="flex gap-1">
         {options.map(({ name, value, icon: Icon }) => (
           <button
             key={value}
             aria-label={`Switch to ${name} mode`}
-            className={`flex-1 flex items-center gap-1 px-2 py-1 rounded transition
-              ${theme === value
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'}
-            `}
+            className={`flex-1 flex items-center gap-1 px-2 py-1 rounded transition ${
+              theme === value
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+            }`}
             onClick={() => setTheme(value)}
             type="button"
           >
@@ -106,10 +106,10 @@ const AppSidebar = () => {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 pb-0">
-        <h2 className="text-lg font-semibold">Nucleus</h2>
-        <p className="text-sm text-gray-600">- powered by DMSI</p>
+        <h2 className="text-lg font-semibold text-foreground">Nucleus</h2>
+        <p className="text-sm text-muted-foreground">- powered by DMSI</p>
       </SidebarHeader>
-      <SidebarContent className="bg-gray-100 dark:bg-gray-900">
+      <SidebarContent className="bg-sidebar">
         {/* Theme selector above main navigation */}
         <ThemeSelector />
         
@@ -148,9 +148,9 @@ const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 bg-gray-100 dark:bg-gray-900">
+      <SidebarFooter className="p-4 bg-sidebar">
         <div className="mb-2">
-          <p className="text-sm text-gray-600 dark:text-gray-300">{user?.email}</p>
+          <p className="text-sm text-sidebar-foreground">{user?.email}</p>
         </div>
         <Button onClick={handleSignOut} variant="outline" className="w-full">
           <LogOut className="mr-2 h-4 w-4" />

@@ -98,9 +98,9 @@ const UploadArea = ({ selectedFolder, currentPath, folders }: UploadAreaProps) =
     <Card 
       className={`border-2 border-dashed transition-all duration-200 ${
         isDragOver 
-          ? 'border-blue-500 bg-blue-500/10' 
-          : 'border-gray-600 hover:border-gray-500'
-      } bg-gray-800`}
+          ? 'border-primary bg-primary/10' 
+          : 'border-border hover:border-primary/50'
+      } bg-card`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -108,22 +108,21 @@ const UploadArea = ({ selectedFolder, currentPath, folders }: UploadAreaProps) =
       <div className="p-8 text-center">
         <div className="flex justify-center items-center mb-4">
           <Upload className={`h-12 w-12 mr-2 ${
-            isDragOver ? 'text-blue-400' : 'text-gray-400'
+            isDragOver ? 'text-primary' : 'text-muted-foreground'
           }`} />
           <FolderPlus className={`h-12 w-12 ${
-            isDragOver ? 'text-blue-400' : 'text-gray-400'
+            isDragOver ? 'text-primary' : 'text-muted-foreground'
           }`} />
         </div>
-        <h3 className="text-lg font-medium text-white mb-2">
+        <h3 className="text-lg font-medium text-foreground mb-2">
           Drop files or folders here
         </h3>
-        <p className="text-gray-400 mb-4">
+        <p className="text-muted-foreground mb-4">
           Support for individual files, folders, and nested folder structures
         </p>
         <div className="space-x-2">
           <Button 
             onClick={() => handleUploadClick(selectedFolder, currentPath, folders)}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
             disabled={!selectedFolder}
           >
             <Upload className="mr-2 h-4 w-4" />

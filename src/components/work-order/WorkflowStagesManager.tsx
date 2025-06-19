@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Edit2, GripVertical, Save, X, Loader2, Plus, Trash2, FolderPlus } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useWorkflowStages } from './hooks/useWorkflowStages';
+import { useFolderMutations } from './hooks/useFolderMutations';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,13 @@ const WorkflowStagesManager = () => {
   const [newSubFolderName, setNewSubFolderName] = useState('');
   const [selectedStageForSubFolder, setSelectedStageForSubFolder] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
+
+  const { createSubFolderMutation } = useFolderMutations(
+    () => {}, // setShowNewFolderDialog - not used here
+    () => {}, // setNewFolderName - not used here
+    () => {}, // setDeleteDialog - not used here
+    () => {}  // setDeleteConfirmation - not used here
+  );
 
   const colorOptions = [
     'bg-blue-500',
@@ -78,9 +86,14 @@ const WorkflowStagesManager = () => {
   const handleCreateSubFolder = async () => {
     if (!newSubFolderName.trim() || !selectedStageForSubFolder) return;
     
-    // This would typically create a sub-folder in the selected workflow stage
-    // For now, we'll just show a success message
     console.log(`Creating sub-folder "${newSubFolderName}" in stage "${selectedStageForSubFolder}"`);
+    
+    // Use the actual mutation to create the sub-folder
+    await createSubFolderMutation.mutateAsync({
+      name: newSubFolderName.trim(),
+      workflowStageId: selectedStageForSubFolder,
+      parentId: selectedStageForSubFolder // Use stage ID as parent for root-level sub-folders
+    });
     
     setIsSubFolderDialogOpen(false);
     setNewSubFolderName('');
@@ -325,11 +338,14 @@ const WorkflowStagesManager = () => {
               <Button variant="outline" onClick={() => setIsSubFolderDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateSubFolder} disabled={!newSubFolderName.trim()}>
-                Create Sub-Folder
+              <Button 
+                onClick={handleCreateSubFolder} 
+                disabled={!newSubFolderName.trim() || createSubFolderMutation.isPending}
+              >
+                {createSubFolderMutation.isPending ? 'Creating...' : 'Create Sub-Folder'}
               </Button>
             </DialogFooter>
-          </DialogContent>
+          </Dialog>
         </Dialog>
       </CardContent>
     </Card>

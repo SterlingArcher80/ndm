@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import InventorySystem from "./pages/InventorySystem";
 import ManageSettings from "./pages/ManageSettings";
 import WorkOrders from "./pages/WorkOrders";
+import Documents from "./pages/Documents";
 import AuthPage from "./components/auth/AuthPage";
 
 const App = () => {
@@ -36,6 +37,7 @@ const App = () => {
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/work-orders" element={<WorkOrders />} />
+                <Route path="/documents" element={<Documents />} />
                 <Route path="/inventory" element={<InventorySystem />} />
                 <Route path="/settings" element={<ManageSettings />} />
                 <Route path="*" element={<NotFound />} />

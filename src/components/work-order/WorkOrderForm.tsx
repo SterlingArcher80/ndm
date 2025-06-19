@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,7 +47,7 @@ const WorkOrderForm = () => {
     try {
       const workOrderData = {
         ...data,
-        bom_id: data.bom_id || null,
+        bom_id: data.bom_id === 'no-bom' ? null : data.bom_id || null,
       };
       await createWorkOrder.mutateAsync(workOrderData);
       toast({
@@ -227,7 +228,7 @@ const WorkOrderForm = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">No BOM</SelectItem>
+                          <SelectItem value="no-bom">No BOM</SelectItem>
                           {boms.map((bom) => (
                             <SelectItem key={bom.id} value={bom.id}>
                               {bom.name} (v{bom.version})

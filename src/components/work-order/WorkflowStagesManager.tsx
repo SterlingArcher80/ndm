@@ -214,7 +214,7 @@ const WorkflowStagesManager = () => {
                         key={color}
                         type="button"
                         className={`w-8 h-8 rounded-full ${color} border-2 ${
-                          newStageColor === color ? 'border-gray-900' : 'border-gray-300'
+                          newStageColor === color ? 'border-foreground' : 'border-border'
                         }`}
                         onClick={() => setNewStageColor(color)}
                       />
@@ -359,7 +359,7 @@ const WorkflowStagesManager = () => {
                                   {stageSubFolders.map((subFolder) => (
                                     <div
                                       key={subFolder.id}
-                                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-md"
+                                      className="flex items-center justify-between p-2 bg-secondary rounded-md"
                                     >
                                       <div className="flex items-center space-x-2">
                                         <Folder className="h-4 w-4 text-blue-500" />

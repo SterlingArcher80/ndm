@@ -42,7 +42,7 @@ const WorkOrderBreadcrumb = ({ breadcrumbPath, currentPath, navigateBack }: Work
       <Breadcrumb>
         <BreadcrumbList>
           {breadcrumbPath.map((crumb, index) => (
-            <React.Fragment key={index}>
+            <div key={index} className="contents">
               <BreadcrumbItem>
                 {index === breadcrumbPath.length - 1 ? (
                   <BreadcrumbPage className="text-white">
@@ -58,7 +58,7 @@ const WorkOrderBreadcrumb = ({ breadcrumbPath, currentPath, navigateBack }: Work
                 )}
               </BreadcrumbItem>
               {index < breadcrumbPath.length - 1 && <BreadcrumbSeparator />}
-            </React.Fragment>
+            </div>
           ))}
         </BreadcrumbList>
       </Breadcrumb>

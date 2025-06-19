@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -26,13 +27,27 @@ export const useFileUpload = () => {
         folderPath
       });
 
-      // Validate file before upload
-      if (!file || file.size === 0) {
-        throw new Error('Invalid file: File is empty or corrupted');
+      // Enhanced file validation
+      if (!file) {
+        throw new Error('No file provided');
+      }
+
+      if (file.size === 0) {
+        throw new Error('File is empty. Please select a valid file.');
+      }
+
+      // Check for reasonable file size limit (100MB)
+      if (file.size > 100 * 1024 * 1024) {
+        throw new Error('File is too large. Maximum size is 100MB.');
       }
 
       if (!workflowStageId) {
         throw new Error('Workflow stage ID is required');
+      }
+
+      // Validate file name
+      if (!file.name || file.name.trim().length === 0) {
+        throw new Error('File name is invalid');
       }
 
       // Generate unique file name to avoid conflicts
@@ -197,7 +212,22 @@ export const useFileUpload = () => {
       folderPath
     });
 
-    const uploadPromises = files.map(file => 
+    // Filter out invalid files before attempting upload
+    const validFiles = files.filter(file => {
+      if (!file || file.size === 0) {
+        console.warn('⚠️ Skipping invalid file:', file?.name || 'unknown');
+        toast.error(`Skipped invalid file: ${file?.name || 'unknown file'}`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) {
+      toast.error('No valid files to upload');
+      return;
+    }
+
+    const uploadPromises = validFiles.map(file => 
       uploadFileMutation.mutateAsync({ 
         file, 
         workflowStageId, 
@@ -211,7 +241,7 @@ export const useFileUpload = () => {
       const successful = results.filter(result => result.status === 'fulfilled').length;
       const failed = results.filter(result => result.status === 'rejected').length;
       
-      console.log('📊 Upload results:', { successful, failed });
+      console.log('📊 Upload results:', { successful, failed, total: validFiles.length });
       
       if (successful > 0) {
         toast.success(`${successful} file(s) uploaded successfully`);

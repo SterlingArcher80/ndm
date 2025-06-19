@@ -1,11 +1,14 @@
-import { FileText, Package, Factory } from 'lucide-react';
+
+import { FileText, Package, Factory, Layers, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Link, useLocation } from 'react-router-dom';
 
 const NAV_LINKS = [
   { label: "Inventory", path: "/inventory", icon: Package },
+  { label: "BOM", path: "/bom", icon: Layers },
   { label: "Work Orders", path: "/work-orders", icon: FileText },
+  { label: "Documents", path: "/documents", icon: FolderOpen },
   { label: "Manufacturing", path: "/analytics", icon: Factory },
 ];
 

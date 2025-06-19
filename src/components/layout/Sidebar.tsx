@@ -1,5 +1,5 @@
 
-import { LogOut, Settings, Sun, Moon, Monitor, Package, FileText, Factory } from 'lucide-react';
+import { LogOut, Settings, Sun, Moon, Monitor, Package, FileText, Factory, Layers, FolderOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -65,9 +65,19 @@ const navigationItems = [
     icon: Package,
   },
   {
+    title: "BOM",
+    url: "/bom",
+    icon: Layers,
+  },
+  {
     title: "Work Orders",
     url: "/work-orders",
     icon: FileText,
+  },
+  {
+    title: "Documents",
+    url: "/documents",
+    icon: FolderOpen,
   },
   {
     title: "Manufacturing",

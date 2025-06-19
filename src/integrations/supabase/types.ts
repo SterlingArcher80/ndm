@@ -221,6 +221,42 @@ export type Database = {
         }
         Relationships: []
       }
+      work_order_fields: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean
+          label: string
+          name: string
+          options: string[] | null
+          order_position: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label: string
+          name: string
+          options?: string[] | null
+          order_position?: number
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean
+          label?: string
+          name?: string
+          options?: string[] | null
+          order_position?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       work_order_items: {
         Row: {
           created_at: string
@@ -273,6 +309,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      work_orders: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          custom_fields: Json | null
+          description: string | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json | null
+          description?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json | null
+          description?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       workflow_stages: {
         Row: {

@@ -6,6 +6,7 @@ import TopNavbar from "@/components/layout/TopNavbar";
 import CategoriesLocationsManager from "@/components/inventory/CategoriesLocationsManager";
 import InventoryColumnsManager from "@/components/inventory/InventoryColumnsManager";
 import WorkflowStagesManager from "@/components/work-order/WorkflowStagesManager";
+import WorkOrderFieldsManager from "@/components/work-order/WorkOrderFieldsManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const ManageSettings = () => {
@@ -39,8 +40,9 @@ const ManageSettings = () => {
             </div>
             
             <Tabs defaultValue="inventory" className="w-full h-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="inventory">Inventory Settings</TabsTrigger>
+                <TabsTrigger value="work-orders">Work Order Settings</TabsTrigger>
                 <TabsTrigger value="workflow">Workflow Settings</TabsTrigger>
               </TabsList>
               
@@ -52,6 +54,15 @@ const ManageSettings = () => {
                 
                 <InventoryColumnsManager />
                 <CategoriesLocationsManager />
+              </TabsContent>
+
+              <TabsContent value="work-orders" className="mt-6 h-full space-y-6">
+                <div className="mb-4">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Work Order Configuration</h2>
+                  <p className="text-gray-600 dark:text-gray-400">Manage custom fields for work orders</p>
+                </div>
+                
+                <WorkOrderFieldsManager />
               </TabsContent>
               
               <TabsContent value="workflow" className="mt-6 h-full">

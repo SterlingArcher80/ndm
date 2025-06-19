@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import TopNavbar from "@/components/layout/TopNavbar";
-import WorkOrderRepository from "@/components/WorkOrderRepository";
+import WorkOrderForm from "@/components/work-order/WorkOrderForm";
 
 const WorkOrders = () => {
   const { user, loading } = useAuth();
@@ -30,7 +30,11 @@ const WorkOrders = () => {
         <TopNavbar />
         <main className="flex-1 p-6 bg-gray-50 dark:bg-gray-950">
           <div className="h-full w-full">
-            <WorkOrderRepository />
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Work Orders</h1>
+              <p className="text-gray-600 dark:text-gray-400">Create and manage work orders</p>
+            </div>
+            <WorkOrderForm />
           </div>
         </main>
       </div>

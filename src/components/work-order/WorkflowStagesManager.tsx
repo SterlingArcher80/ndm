@@ -1,12 +1,15 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit2, GripVertical, Save, X, Loader2, Plus, Trash2, FolderPlus } from 'lucide-react';
+import { Edit2, GripVertical, Save, X, Loader2, Plus, Trash2, FolderPlus, Folder } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { useWorkflowStages } from './hooks/useWorkflowStages';
 import { useFolderMutations } from './hooks/useFolderMutations';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -30,12 +33,41 @@ const WorkflowStagesManager = () => {
   const [selectedStageForSubFolder, setSelectedStageForSubFolder] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<string | null>(null);
 
-  const { createSubFolderMutation } = useFolderMutations(
+  const { createSubFolderMutation, deleteItemMutation } = useFolderMutations(
     () => {}, // setShowNewFolderDialog - not used here
     () => {}, // setNewFolderName - not used here
     () => {}, // setDeleteDialog - not used here
     () => {}  // setDeleteConfirmation - not used here
   );
+
+  // Fetch sub-folders for all workflow stages
+  const { data: subFolders = [], refetch: refetchSubFolders } = useQuery({
+    queryKey: ['workflow-stage-subfolders'],
+    queryFn: async () => {
+      console.log('🔍 Fetching sub-folders for workflow stages...');
+      const { data, error } = await supabase
+        .from('work_order_items')
+        .select('*')
+        .eq('type', 'folder')
+        .is('parent_id', null)
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('❌ Error fetching sub-folders:', error);
+        throw error;
+      }
+      
+      console.log('📋 Sub-folders data:', data);
+      return data || [];
+    }
+  });
+
+  // Refetch sub-folders when a new one is created
+  React.useEffect(() => {
+    if (createSubFolderMutation.isSuccess) {
+      refetchSubFolders();
+    }
+  }, [createSubFolderMutation.isSuccess, refetchSubFolders]);
 
   const colorOptions = [
     'bg-blue-500',
@@ -103,6 +135,15 @@ const WorkflowStagesManager = () => {
   const handleDeleteStage = async (stageId: string) => {
     await deleteStage(stageId);
     setDeleteDialogOpen(null);
+  };
+
+  const handleDeleteSubFolder = async (subFolderId: string) => {
+    await deleteItemMutation.mutateAsync(subFolderId);
+    refetchSubFolders();
+  };
+
+  const getSubFoldersForStage = (stageId: string) => {
+    return subFolders.filter(folder => folder.workflow_stage_id === stageId);
   };
 
   const handleDragEnd = (result: DropResult) => {
@@ -199,115 +240,153 @@ const WorkflowStagesManager = () => {
           <Droppable droppableId="stages">
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
-                {stages.map((stage, index) => (
-                  <Draggable key={stage.id} draggableId={stage.id} index={index}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className={`flex items-center justify-between p-4 border rounded-lg bg-white dark:bg-gray-800 ${
-                          snapshot.isDragging ? 'shadow-lg' : 'shadow-sm'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div
-                            {...provided.dragHandleProps}
-                            className="text-gray-400 hover:text-gray-600 cursor-grab"
-                          >
-                            <GripVertical className="h-5 w-5" />
-                          </div>
-                          <div className={`w-4 h-4 rounded-full ${stage.color}`}></div>
-                          <Badge variant="outline" className="min-w-[3rem] justify-center">
-                            {stage.order_position}
-                          </Badge>
-                          {editingId === stage.id ? (
-                            <Input
-                              value={editingName}
-                              onChange={(e) => setEditingName(e.target.value)}
-                              className="max-w-xs"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') handleSave(stage.id);
-                                if (e.key === 'Escape') handleCancel();
-                              }}
-                              autoFocus
-                            />
-                          ) : (
-                            <span className="font-medium text-gray-900 dark:text-white">{stage.name}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {editingId === stage.id ? (
-                            <>
-                              <Button
-                                size="sm"
-                                onClick={() => handleSave(stage.id)}
-                                disabled={!editingName.trim()}
+                {stages.map((stage, index) => {
+                  const stageSubFolders = getSubFoldersForStage(stage.id);
+                  return (
+                    <Draggable key={stage.id} draggableId={stage.id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          className={`border rounded-lg bg-white dark:bg-gray-800 ${
+                            snapshot.isDragging ? 'shadow-lg' : 'shadow-sm'
+                          }`}
+                        >
+                          {/* Stage Header */}
+                          <div className="flex items-center justify-between p-4">
+                            <div className="flex items-center space-x-3">
+                              <div
+                                {...provided.dragHandleProps}
+                                className="text-gray-400 hover:text-gray-600 cursor-grab"
                               >
-                                <Save className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleCancel}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleAddSubFolder(stage.id)}
-                                title="Add sub-folder"
-                              >
-                                <FolderPlus className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEdit(stage)}
-                              >
-                                <Edit2 className="h-4 w-4" />
-                              </Button>
-                              <Dialog open={deleteDialogOpen === stage.id} onOpenChange={(open) => setDeleteDialogOpen(open ? stage.id : null)}>
-                                <DialogTrigger asChild>
+                                <GripVertical className="h-5 w-5" />
+                              </div>
+                              <div className={`w-4 h-4 rounded-full ${stage.color}`}></div>
+                              <Badge variant="outline" className="min-w-[3rem] justify-center">
+                                {stage.order_position}
+                              </Badge>
+                              {editingId === stage.id ? (
+                                <Input
+                                  value={editingName}
+                                  onChange={(e) => setEditingName(e.target.value)}
+                                  className="max-w-xs"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSave(stage.id);
+                                    if (e.key === 'Escape') handleCancel();
+                                  }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <span className="font-medium text-gray-900 dark:text-white">{stage.name}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {editingId === stage.id ? (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSave(stage.id)}
+                                    disabled={!editingName.trim()}
+                                  >
+                                    <Save className="h-4 w-4" />
+                                  </Button>
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={handleCancel}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <X className="h-4 w-4" />
                                   </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Delete Workflow Stage</DialogTitle>
-                                    <DialogDescription>
-                                      Are you sure you want to delete the "{stage.name}" stage? This action cannot be undone.
-                                      Any work orders in this stage will need to be moved to another stage first.
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <DialogFooter>
-                                    <Button variant="outline" onClick={() => setDeleteDialogOpen(null)}>
-                                      Cancel
-                                    </Button>
-                                    <Button
-                                      variant="destructive"
-                                      onClick={() => handleDeleteStage(stage.id)}
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleAddSubFolder(stage.id)}
+                                    title="Add sub-folder"
+                                  >
+                                    <FolderPlus className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEdit(stage)}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                  <Dialog open={deleteDialogOpen === stage.id} onOpenChange={(open) => setDeleteDialogOpen(open ? stage.id : null)}>
+                                    <DialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                      <DialogHeader>
+                                        <DialogTitle>Delete Workflow Stage</DialogTitle>
+                                        <DialogDescription>
+                                          Are you sure you want to delete the "{stage.name}" stage? This action cannot be undone.
+                                          Any work orders in this stage will need to be moved to another stage first.
+                                        </DialogDescription>
+                                      </DialogHeader>
+                                      <DialogFooter>
+                                        <Button variant="outline" onClick={() => setDeleteDialogOpen(null)}>
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          variant="destructive"
+                                          onClick={() => handleDeleteStage(stage.id)}
+                                        >
+                                          Delete Stage
+                                        </Button>
+                                      </DialogFooter>
+                                    </DialogContent>
+                                  </Dialog>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Sub-folders for this stage */}
+                          {stageSubFolders.length > 0 && (
+                            <div className="px-4 pb-4">
+                              <div className="border-t pt-3">
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Sub-folders:</p>
+                                <div className="space-y-1">
+                                  {stageSubFolders.map((subFolder) => (
+                                    <div
+                                      key={subFolder.id}
+                                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-md"
                                     >
-                                      Delete Stage
-                                    </Button>
-                                  </DialogFooter>
-                                </DialogContent>
-                              </Dialog>
-                            </>
+                                      <div className="flex items-center space-x-2">
+                                        <Folder className="h-4 w-4 text-blue-500" />
+                                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                          {subFolder.name}
+                                        </span>
+                                      </div>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleDeleteSubFolder(subFolder.id)}
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
+                      )}
+                    </Draggable>
+                  );
+                })}
                 {provided.placeholder}
               </div>
             )}
@@ -345,7 +424,7 @@ const WorkflowStagesManager = () => {
                 {createSubFolderMutation.isPending ? 'Creating...' : 'Create Sub-Folder'}
               </Button>
             </DialogFooter>
-          </DialogContent>
+          </Dialog>
         </Dialog>
       </CardContent>
     </Card>

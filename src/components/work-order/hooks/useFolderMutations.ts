@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -96,7 +97,7 @@ export const useFolderMutations = (
       
       const { data, error } = await supabase
         .from('work_order_items')
-        .update({ is_locked: isLocked })
+        .update({ is_locked: isLocked } as any) // Temporary type assertion until types are updated
         .eq('id', folderId)
         .select()
         .single();
@@ -110,7 +111,8 @@ export const useFolderMutations = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
-      toast.success(`Folder "${data.name}" has been ${data.is_locked ? 'locked' : 'unlocked'}`);
+      const isLocked = (data as any).is_locked; // Temporary type assertion until types are updated
+      toast.success(`Folder "${data.name}" has been ${isLocked ? 'locked' : 'unlocked'}`);
     },
     onError: (error) => {
       console.error('Failed to toggle folder lock:', error);
@@ -134,7 +136,7 @@ export const useFolderMutations = (
       }
 
       // Check if folder is locked before allowing deletion
-      if (item.type === 'folder' && item.is_locked) {
+      if (item.type === 'folder' && (item as any).is_locked) { // Temporary type assertion until types are updated
         throw new Error('Cannot delete a locked folder. Please unlock it first.');
       }
 

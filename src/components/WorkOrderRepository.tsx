@@ -51,7 +51,7 @@ const WorkOrderRepository = () => {
           file_path: item.file_path,
           workflow_stage_id: item.workflow_stage_id,
           parent_id: item.parent_id,
-          is_locked: item.is_locked
+          is_locked: (item as any).is_locked // Temporary type assertion until types are updated
         });
       });
       

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -424,7 +423,7 @@ const WorkflowStagesManager = () => {
                 {createSubFolderMutation.isPending ? 'Creating...' : 'Create Sub-Folder'}
               </Button>
             </DialogFooter>
-          </Dialog>
+          </DialogContent>
         </Dialog>
       </CardContent>
     </Card>

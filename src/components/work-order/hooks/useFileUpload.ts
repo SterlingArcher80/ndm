@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -45,19 +44,31 @@ export const useFileUpload = () => {
         throw new Error('Workflow stage ID is required');
       }
 
-      // Validate file name
+      // Validate and sanitize file name
       if (!file.name || file.name.trim().length === 0) {
         throw new Error('File name is invalid');
       }
 
-      // Generate unique file name to avoid conflicts
-      const fileExtension = file.name.split('.').pop() || 'unknown';
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+      // Clean the original file name to remove any problematic characters
+      const cleanFileName = file.name
+        .replace(/[~$]/g, '') // Remove ~ and $ characters that might cause issues
+        .replace(/^\s+|\s+$/g, '') // Trim whitespace
+        .replace(/\s+/g, ' '); // Normalize multiple spaces to single space
+
+      console.log('🧹 Cleaned file name:', { original: file.name, cleaned: cleanFileName });
+
+      // Generate unique file name to avoid conflicts while preserving original extension
+      const fileExtension = cleanFileName.split('.').pop() || 'unknown';
+      const fileBaseName = cleanFileName.substring(0, cleanFileName.lastIndexOf('.')) || cleanFileName;
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(7);
+      const fileName = `${timestamp}-${randomId}.${fileExtension}`;
       const storagePath = `${workflowStageId}/${fileName}`;
 
       console.log('📁 Upload path:', storagePath);
       console.log('🔍 File details:', {
         originalName: file.name,
+        cleanedName: cleanFileName,
         generatedName: fileName,
         size: file.size,
         type: file.type,
@@ -138,10 +149,10 @@ export const useFileUpload = () => {
           // Don't fail the upload for CORS issues, as the file might still be accessible
         }
 
-        // Save file metadata to database
+        // Save file metadata to database using the cleaned original name
         console.log('💾 Saving to database...');
         const dbPayload = {
-          name: file.name,
+          name: cleanFileName, // Use cleaned original name for display
           type: 'file',
           workflow_stage_id: workflowStageId,
           parent_id: parentId || null,

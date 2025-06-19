@@ -183,6 +183,21 @@ const handler = async (req: Request): Promise<Response> => {
 
       console.log('File successfully updated in storage');
 
+      // Update the work_order_items record with the new timestamp
+      const { error: updateError } = await supabase
+        .from('work_order_items')
+        .update({ 
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', fileId);
+
+      if (updateError) {
+        console.error('Failed to update file timestamp:', updateError);
+        // Don't throw error here as the file was successfully updated
+      } else {
+        console.log('File timestamp updated successfully');
+      }
+
       // Delete the file from OneDrive
       const deleteResponse = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${trackingData.onedrive_file_id}`, {
         method: 'DELETE',

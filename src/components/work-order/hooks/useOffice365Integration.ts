@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { toast } from '@/components/ui/sonner';
 import { WorkOrderFile } from '../types';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 // MSAL configuration with your actual client and tenant IDs
 const msalConfig = {
@@ -25,6 +25,7 @@ export const useOffice365Integration = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const initializeMsal = async () => {
@@ -136,8 +137,10 @@ export const useOffice365Integration = () => {
 
       if (data?.success) {
         toast.success(`${file.name} has been synced back from OneDrive`);
-        // Refresh the page to show updated file
-        window.location.reload();
+        
+        // Invalidate relevant queries to refresh data without losing navigation state
+        queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+        queryClient.invalidateQueries({ queryKey: ['onedrive-info', file.id] });
       } else {
         throw new Error('Failed to sync back file');
       }

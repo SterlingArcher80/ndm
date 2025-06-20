@@ -56,13 +56,12 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
 
   const selectedBlock = blocks.find(b => b.id === editorState.selectedBlockId);
 
-  // Render the existing page content in an iframe for preview mode
+  // Render the existing page content in an iframe for background reference
   const renderPagePreview = () => {
-    const currentPath = window.location.pathname;
     const previewUrl = `${window.location.origin}${pageId}`;
     
     return (
-      <div className="w-full h-full">
+      <div className="absolute inset-0">
         <iframe
           src={previewUrl}
           className="w-full h-full border-0"
@@ -104,27 +103,23 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
 
         {/* Canvas Area */}
         <div className="flex-1 overflow-auto relative">
-          {/* Show existing page content as background/preview */}
-          {!editorState.isEditing && (
-            <div className="absolute inset-0">
-              {renderPagePreview()}
-            </div>
-          )}
+          {/* Always show existing page content as background */}
+          {renderPagePreview()}
 
-          {/* Editable content overlay */}
+          {/* Editable content overlay - only show when editing */}
           {editorState.isEditing && (
-            <div className="absolute inset-0 bg-white bg-opacity-90 z-10">
+            <div className="absolute inset-0 bg-white bg-opacity-95 z-10">
               <div className="max-w-7xl mx-auto p-6">
                 {blocks.length === 0 ? (
                   <div className="text-center py-12">
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Start editing this page
+                      Add elements to customize this page
                     </h3>
                     <p className="text-gray-600 mb-4">
-                      Add blocks from the sidebar to begin customizing this page content.
+                      The existing page content is shown in the background for reference.
                     </p>
                     <p className="text-sm text-gray-500">
-                      Your existing page content will remain intact until you publish changes.
+                      Add blocks from the sidebar to overlay new content on top of the existing page.
                     </p>
                   </div>
                 ) : (

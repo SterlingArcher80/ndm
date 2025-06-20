@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { toast } from '@/components/ui/sonner';
@@ -18,23 +19,72 @@ const msalConfig = {
   },
 };
 
-const msalInstance = new PublicClientApplication(msalConfig);
+// Check if we're in a secure context or localhost
+const isSecureContext = () => {
+  return window.isSecureContext || 
+         window.location.protocol === 'https:' || 
+         window.location.hostname === 'localhost' ||
+         window.location.hostname === '127.0.0.1';
+};
+
+// Check if crypto API is available
+const isCryptoAvailable = () => {
+  return typeof window.crypto !== 'undefined' && 
+         typeof window.crypto.subtle !== 'undefined';
+};
+
+let msalInstance: PublicClientApplication | null = null;
+
+// Only initialize MSAL if we're in a secure context
+if (isSecureContext() && isCryptoAvailable()) {
+  try {
+    msalInstance = new PublicClientApplication(msalConfig);
+  } catch (error) {
+    console.warn("Failed to initialize MSAL:", error);
+  }
+}
 
 export const useOffice365Integration = () => {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isSupported, setIsSupported] = useState(true);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     const initializeMsal = async () => {
+      // Check if Office 365 integration is supported in current environment
+      if (!isSecureContext()) {
+        console.warn("Office 365 integration requires HTTPS or localhost");
+        setIsSupported(false);
+        setIsInitialized(false);
+        return;
+      }
+
+      if (!isCryptoAvailable()) {
+        console.warn("Office 365 integration requires crypto API support");
+        setIsSupported(false);
+        setIsInitialized(false);
+        return;
+      }
+
+      if (!msalInstance) {
+        console.warn("MSAL instance not available");
+        setIsSupported(false);
+        setIsInitialized(false);
+        return;
+      }
+
       try {
         await msalInstance.initialize();
         setIsInitialized(true);
+        setIsSupported(true);
         console.log("MSAL instance initialized successfully");
       } catch (error) {
         console.error("Failed to initialize MSAL:", error);
+        setIsSupported(false);
+        setIsInitialized(false);
         toast.error("Failed to initialize Microsoft authentication");
       }
     };
@@ -43,7 +93,11 @@ export const useOffice365Integration = () => {
   }, []);
 
   const authenticateWithMicrosoft = async () => {
-    if (!isInitialized) {
+    if (!isSupported) {
+      throw new Error("Office 365 integration is not supported in this environment");
+    }
+
+    if (!isInitialized || !msalInstance) {
       throw new Error("MSAL not initialized yet");
     }
 
@@ -66,6 +120,11 @@ export const useOffice365Integration = () => {
   };
 
   const editInOffice365 = async (file: WorkOrderFile) => {
+    if (!isSupported) {
+      toast.error("Office 365 integration is not supported in this environment. Please use HTTPS or localhost.");
+      return;
+    }
+
     if (!isInitialized) {
       toast.error("Microsoft authentication is still initializing. Please try again in a moment.");
       return;
@@ -109,6 +168,11 @@ export const useOffice365Integration = () => {
   };
 
   const syncBackFromOneDrive = async (file: WorkOrderFile) => {
+    if (!isSupported) {
+      toast.error("Office 365 integration is not supported in this environment. Please use HTTPS or localhost.");
+      return;
+    }
+
     if (!isInitialized) {
       toast.error("Microsoft authentication is still initializing. Please try again in a moment.");
       return;
@@ -158,6 +222,7 @@ export const useOffice365Integration = () => {
     isAuthenticating,
     isUploading,
     isSyncing,
-    isInitialized
+    isInitialized,
+    isSupported
   };
 };

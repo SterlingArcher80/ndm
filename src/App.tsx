@@ -13,6 +13,7 @@ import ManageSettings from "./pages/ManageSettings";
 import WorkOrders from "./pages/WorkOrders";
 import Documents from "./pages/Documents";
 import BOM from "./pages/BOM";
+import Manufacturing from "./pages/Manufacturing";
 import AuthPage from "./components/auth/AuthPage";
 
 const App = () => {
@@ -41,6 +42,7 @@ const App = () => {
                 <Route path="/documents" element={<Documents />} />
                 <Route path="/inventory" element={<InventorySystem />} />
                 <Route path="/bom" element={<BOM />} />
+                <Route path="/manufacturing" element={<Manufacturing />} />
                 <Route path="/settings" element={<ManageSettings />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

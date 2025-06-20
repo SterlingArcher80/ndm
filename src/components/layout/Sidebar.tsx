@@ -81,7 +81,7 @@ const navigationItems = [
   },
   {
     title: "Manufacturing",
-    url: "/analytics",
+    url: "/manufacturing",
     icon: Factory,
   },
 ];

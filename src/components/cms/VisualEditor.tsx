@@ -120,23 +120,23 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
 
         {/* Canvas Area */}
         <div className="flex-1 overflow-auto relative">
-          {/* Show existing page content as background in preview mode */}
-          {!editorState.isEditing && renderPagePreview()}
+          {/* Always show existing page content as background */}
+          {renderPagePreview()}
 
           {/* Editable content overlay - only show when editing */}
           {editorState.isEditing && (
-            <div className="absolute inset-0 bg-white z-10">
+            <div className="absolute inset-0 bg-white bg-opacity-75 z-10">
               <div className="max-w-7xl mx-auto p-6">
                 {blocks.length === 0 ? (
-                  <div className="text-center py-12">
+                  <div className="text-center py-12 bg-white bg-opacity-90 rounded-lg border-2 border-dashed border-gray-300">
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       Add elements to customize this page
                     </h3>
                     <p className="text-gray-600 mb-4">
-                      Start adding blocks from the sidebar to build your page content.
+                      The existing page content is visible in the background for reference.
                     </p>
                     <p className="text-sm text-gray-500">
-                      Your changes will overlay on top of the existing page when published.
+                      Add blocks from the sidebar to overlay new content on top of the existing page.
                     </p>
                   </div>
                 ) : (
@@ -147,16 +147,17 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
                     >
                       <div className="space-y-4">
                         {blocks.map((block) => (
-                          <EditableBlock
-                            key={block.id}
-                            block={block}
-                            isSelected={block.id === editorState.selectedBlockId}
-                            isEditing={editorState.isEditing}
-                            onSelect={() => selectBlock(block.id)}
-                            onUpdate={(updates) => updateBlock(block.id, updates)}
-                            onDelete={() => deleteBlock(block.id)}
-                            onDuplicate={() => duplicateBlock(block.id)}
-                          />
+                          <div key={block.id} className="bg-white bg-opacity-90 rounded-lg">
+                            <EditableBlock
+                              block={block}
+                              isSelected={block.id === editorState.selectedBlockId}
+                              isEditing={editorState.isEditing}
+                              onSelect={() => selectBlock(block.id)}
+                              onUpdate={(updates) => updateBlock(block.id, updates)}
+                              onDelete={() => deleteBlock(block.id)}
+                              onDuplicate={() => duplicateBlock(block.id)}
+                            />
+                          </div>
                         ))}
                       </div>
                     </SortableContext>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,7 +22,7 @@ const bomSchema = z.object({
   custom_fields: z.record(z.any()).default({}),
   bom_items: z.array(z.object({
     inventory_item_id: z.string().min(1, 'Inventory item is required'),
-    quantity_required: z.number().min(0.01, 'Quantity must be greater than 0'),
+    quantity_required: z.number().int().min(1, 'Quantity must be at least 1'),
     notes: z.string().optional(),
   })).default([]),
 });
@@ -288,9 +287,10 @@ const BOMForm = () => {
                             <FormControl>
                               <Input
                                 type="number"
-                                step="0.01"
+                                step="1"
+                                min="1"
                                 {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                               />
                             </FormControl>
                             <FormMessage />

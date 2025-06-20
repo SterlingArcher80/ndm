@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -200,7 +199,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   const renderPreview = () => {
     if (isOrphanedFile) {
       return (
-        <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+        <div className="flex items-center justify-center h-[500px] bg-gray-100 rounded-lg">
           <div className="text-center max-w-md">
             <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-800 mb-2">File Upload Failed</h3>
@@ -245,11 +244,11 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
     switch (fileType) {
       case 'image':
         return (
-          <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden h-[500px]">
             <img
               src={currentFileUrl!}
               alt={file.name}
-              className="max-w-full max-h-96 object-contain"
+              className="max-w-full max-h-full object-contain"
               onLoad={handleLoad}
               onError={handleError}
             />
@@ -258,11 +257,11 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
 
       case 'video':
         return (
-          <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden h-[500px]">
             <video
               src={currentFileUrl!}
               controls
-              className="max-w-full max-h-96"
+              className="max-w-full max-h-full"
               onLoadedData={handleLoad}
               onError={handleError}
             >
@@ -273,7 +272,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
 
       case 'pdf':
         return (
-          <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+          <div className="w-full h-[500px] bg-gray-100 rounded-lg overflow-hidden">
             <iframe
               src={`${currentFileUrl}#toolbar=1&navpanes=1&scrollbar=1`}
               className="w-full h-full"
@@ -287,7 +286,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
       case 'word':
         const wordViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(currentFileUrl!)}`;
         return (
-          <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+          <div className="w-full h-[500px] bg-gray-100 rounded-lg overflow-hidden">
             <iframe
               src={wordViewerUrl}
               className="w-full h-full"
@@ -301,7 +300,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
       case 'excel':
         const excelViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(currentFileUrl!)}`;
         return (
-          <div className="w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+          <div className="w-full h-[500px] bg-gray-100 rounded-lg overflow-hidden">
             <iframe
               src={excelViewerUrl}
               className="w-full h-full"
@@ -314,7 +313,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
 
       default:
         return (
-          <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+          <div className="flex items-center justify-center h-[500px] bg-gray-100 rounded-lg">
             <div className="text-center">
               <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-2" />
               <p className="text-gray-600 mb-4">Preview not available for this file type</p>
@@ -330,8 +329,8 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[800px] max-w-[800px] max-h-[95vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="w-[800px] max-w-[800px] h-[80vh] max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <div className="flex flex-col gap-3">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -382,9 +381,9 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
           </div>
         </DialogHeader>
         
-        <div className="mt-4 overflow-auto flex-1">
+        <div className="flex-1 overflow-auto">
           {isLoading && currentFileUrl && !isOrphanedFile && (
-            <div className="flex items-center justify-center h-96 bg-gray-100 rounded-lg">
+            <div className="flex items-center justify-center h-[500px] bg-gray-100 rounded-lg">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                 <p className="text-gray-600">Loading preview...</p>

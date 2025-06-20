@@ -19,8 +19,8 @@ const AuthPage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-lg text-foreground">Loading...</div>
       </div>
     );
   }
@@ -56,80 +56,84 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Package className="h-12 w-12 text-blue-600" />
-          </div>
-          <CardTitle className="text-2xl">
-            {isLogin ? 'Sign In' : 'Sign Up'}
-          </CardTitle>
-          <CardDescription>
-            {isLogin 
-              ? 'Enter your credentials to access the inventory system'
-              : 'Create an account to get started'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="your@email.com"
-              />
+    <div className="min-h-screen w-full flex items-center justify-center bg-background px-4 py-8">
+      <div className="w-full max-w-md">
+        <Card className="border-border bg-card">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Package className="h-12 w-12 text-primary" />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="••••••••"
-              />
-            </div>
-
-            {error && (
-              <Alert>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={isSubmitting}
-            >
-              {isSubmitting 
-                ? (isLogin ? 'Signing In...' : 'Signing Up...') 
-                : (isLogin ? 'Sign In' : 'Sign Up')
-              }
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-blue-600 hover:underline"
-            >
+            <CardTitle className="text-2xl text-card-foreground">
+              {isLogin ? 'Sign In' : 'Sign Up'}
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
               {isLogin 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
+                ? 'Enter your credentials to access the inventory system'
+                : 'Create an account to get started'
               }
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-foreground">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="your@email.com"
+                  className="bg-background border-input text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-foreground">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="••••••••"
+                  className="bg-background border-input text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              {error && (
+                <Alert className="border-border bg-card">
+                  <AlertDescription className="text-card-foreground">{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                disabled={isSubmitting}
+              >
+                {isSubmitting 
+                  ? (isLogin ? 'Signing In...' : 'Signing Up...') 
+                  : (isLogin ? 'Sign In' : 'Sign Up')
+                }
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-primary hover:text-primary/80 hover:underline transition-colors"
+              >
+                {isLogin 
+                  ? "Don't have an account? Sign up" 
+                  : "Already have an account? Sign in"
+                }
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

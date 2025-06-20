@@ -4,6 +4,7 @@ import { Navigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import TopNavbar from "@/components/layout/TopNavbar";
 import InventoryDashboard from "@/components/inventory/InventoryDashboard";
+import { EditablePage } from "@/components/cms/EditablePage";
 
 const InventorySystem = () => {
   const { user, loading } = useAuth();
@@ -24,17 +25,19 @@ const InventorySystem = () => {
   }
 
   return (
-    <div className="min-h-screen w-full flex bg-gray-50 dark:bg-gray-950">
-      <Sidebar />
-      <div className="flex-1 min-h-screen flex flex-col">
-        <TopNavbar />
-        <main className="flex-1 p-6 bg-gray-50 dark:bg-gray-950">
-          <div className="h-full w-full">
-            <InventoryDashboard />
-          </div>
-        </main>
+    <EditablePage pageId="/inventory">
+      <div className="min-h-screen w-full flex bg-gray-50 dark:bg-gray-950">
+        <Sidebar />
+        <div className="flex-1 min-h-screen flex flex-col">
+          <TopNavbar />
+          <main className="flex-1 p-6 bg-gray-50 dark:bg-gray-950">
+            <div className="h-full w-full">
+              <InventoryDashboard />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </EditablePage>
   );
 };
 

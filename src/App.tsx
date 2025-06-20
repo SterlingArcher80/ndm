@@ -14,6 +14,7 @@ import WorkOrders from "./pages/WorkOrders";
 import Documents from "./pages/Documents";
 import BOM from "./pages/BOM";
 import AuthPage from "./components/auth/AuthPage";
+import CMSEditor from "./pages/CMSEditor";
 
 const App = () => {
   // Create QueryClient inside the component to ensure React context is available
@@ -42,6 +43,7 @@ const App = () => {
                 <Route path="/inventory" element={<InventorySystem />} />
                 <Route path="/bom" element={<BOM />} />
                 <Route path="/settings" element={<ManageSettings />} />
+                <Route path="/cms/edit/:pageId" element={<CMSEditor />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </div>

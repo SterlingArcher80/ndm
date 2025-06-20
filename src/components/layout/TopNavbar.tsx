@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { label: "BOM", path: "/bom", icon: Layers },
   { label: "Work Orders", path: "/work-orders", icon: FileText },
   { label: "Documents", path: "/documents", icon: FolderOpen },
-  { label: "Manufacturing", path: "/analytics", icon: Factory },
+  { label: "Manufacturing", path: "/manufacturing", icon: Factory },
 ];
 
 const TopNavbar = () => {
@@ -23,9 +23,7 @@ const TopNavbar = () => {
       </div>
       <div className="flex items-center gap-2">
         {NAV_LINKS.map(({ label, path, icon: Icon }) => {
-          const isActive =
-            location.pathname === path ||
-            (label === "Manufacturing" && location.pathname === "/analytics");
+          const isActive = location.pathname === path;
           return (
             <Link to={path} key={label}>
               <Button

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -329,7 +330,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-hidden">
+      <DialogContent className="w-[800px] max-w-[800px] max-h-[95vh] overflow-hidden">
         <DialogHeader>
           <div className="flex flex-col gap-3">
             <div className="flex items-start justify-between gap-4">

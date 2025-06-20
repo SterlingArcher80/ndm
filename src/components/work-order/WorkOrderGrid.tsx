@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { FolderOpen, FileText, Lock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -119,7 +120,7 @@ const WorkOrderGrid = ({
         {items.map((item) => (
           <Card
             key={item.id}
-            className={`bg-gray-800 border-gray-700 hover:bg-gray-750 transition-all duration-200 cursor-pointer ${
+            className={`bg-card hover:bg-muted/50 border-border transition-all duration-200 cursor-pointer ${
               item.type === 'folder' && dragOverFolderId === item.id 
                 ? 'border-blue-500 bg-blue-500/10' 
                 : ''
@@ -138,24 +139,24 @@ const WorkOrderGrid = ({
                     {item.type === 'folder' ? (
                       <FolderOpen className="h-8 w-8 text-blue-400 mr-3" />
                     ) : (
-                      <FileText className="h-8 w-8 text-gray-400 mr-3" />
+                      <FileText className="h-8 w-8 text-muted-foreground mr-3" />
                     )}
                     {item.type === 'folder' && item.is_locked && (
                       <Lock className="h-3 w-3 text-yellow-500 absolute -top-1 -right-1" />
                     )}
                   </div>
                   <div>
-                    <h3 className="font-medium text-white text-sm flex items-center">
+                    <h3 className="font-medium text-foreground text-sm flex items-center">
                       {item.name}
                       {item.type === 'folder' && item.is_locked && (
                         <Lock className="h-3 w-3 text-yellow-500 ml-2" />
                       )}
                     </h3>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {item.size && `${item.size} • `}Modified {item.modifiedDate}
                     </p>
                     {item.folderPath && (
-                      <p className="text-xs text-gray-500 mt-1" title={item.folderPath}>
+                      <p className="text-xs text-muted-foreground/70 mt-1" title={item.folderPath}>
                         Path: {item.folderPath}
                       </p>
                     )}

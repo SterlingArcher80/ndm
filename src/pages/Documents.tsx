@@ -4,7 +4,6 @@ import { Navigate } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import TopNavbar from "@/components/layout/TopNavbar";
 import WorkOrderRepository from "@/components/WorkOrderRepository";
-import { EditablePage } from "@/components/cms/EditablePage";
 
 const Documents = () => {
   const { user, loading } = useAuth();
@@ -25,19 +24,17 @@ const Documents = () => {
   }
 
   return (
-    <EditablePage pageId="/documents">
-      <div className="min-h-screen w-full flex bg-background">
-        <Sidebar />
-        <div className="flex-1 min-h-screen flex flex-col">
-          <TopNavbar />
-          <main className="flex-1 p-6 bg-background">
-            <div className="h-full w-full">
-              <WorkOrderRepository />
-            </div>
-          </main>
-        </div>
+    <div className="min-h-screen w-full flex bg-background">
+      <Sidebar />
+      <div className="flex-1 min-h-screen flex flex-col">
+        <TopNavbar />
+        <main className="flex-1 p-6 bg-background">
+          <div className="h-full w-full">
+            <WorkOrderRepository />
+          </div>
+        </main>
       </div>
-    </EditablePage>
+    </div>
   );
 };
 

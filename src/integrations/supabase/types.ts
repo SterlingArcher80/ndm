@@ -150,125 +150,6 @@ export type Database = {
         }
         Relationships: []
       }
-      content_blocks: {
-        Row: {
-          block_type: string
-          content: Json
-          created_at: string
-          id: string
-          is_active: boolean
-          is_global: boolean
-          page_id: string
-          parent_id: string | null
-          position: number
-          styles: Json
-          updated_at: string
-        }
-        Insert: {
-          block_type: string
-          content?: Json
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          is_global?: boolean
-          page_id: string
-          parent_id?: string | null
-          position?: number
-          styles?: Json
-          updated_at?: string
-        }
-        Update: {
-          block_type?: string
-          content?: Json
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          is_global?: boolean
-          page_id?: string
-          parent_id?: string | null
-          position?: number
-          styles?: Json
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "content_blocks_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "content_blocks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      content_revisions: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          id: string
-          is_published: boolean
-          page_id: string
-          revision_data: Json
-          revision_number: number
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_published?: boolean
-          page_id: string
-          revision_data: Json
-          revision_number: number
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_published?: boolean
-          page_id?: string
-          revision_data?: Json
-          revision_number?: number
-        }
-        Relationships: []
-      }
-      content_templates: {
-        Row: {
-          category: string
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_system: boolean
-          name: string
-          template_data: Json
-          thumbnail_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          category?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_system?: boolean
-          name: string
-          template_data?: Json
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_system?: boolean
-          name?: string
-          template_data?: Json
-          thumbnail_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       inventory_columns: {
         Row: {
           created_at: string
@@ -427,45 +308,6 @@ export type Database = {
           },
         ]
       }
-      page_configs: {
-        Row: {
-          created_at: string
-          custom_css: string | null
-          id: string
-          is_published: boolean
-          layout_settings: Json
-          meta_description: string | null
-          meta_title: string | null
-          page_id: string
-          page_name: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          custom_css?: string | null
-          id?: string
-          is_published?: boolean
-          layout_settings?: Json
-          meta_description?: string | null
-          meta_title?: string | null
-          page_id: string
-          page_name: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          custom_css?: string | null
-          id?: string
-          is_published?: boolean
-          layout_settings?: Json
-          meta_description?: string | null
-          meta_title?: string | null
-          page_id?: string
-          page_name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
@@ -492,33 +334,6 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
           theme?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      site_settings: {
-        Row: {
-          category: string
-          created_at: string
-          id: string
-          setting_key: string
-          setting_value: Json
-          updated_at: string
-        }
-        Insert: {
-          category?: string
-          created_at?: string
-          id?: string
-          setting_key: string
-          setting_value: Json
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          id?: string
-          setting_key?: string
-          setting_value?: Json
           updated_at?: string
         }
         Relationships: []

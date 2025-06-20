@@ -58,6 +58,23 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
 
   // Render the existing page content in an iframe for background reference
   const renderPagePreview = () => {
+    // Prevent circular loading by checking if we're already in the editor
+    const isInEditor = window.location.pathname.includes('/cms/edit/');
+    if (isInEditor) {
+      return (
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-gray-700 mb-2">
+              Original Page Preview
+            </h3>
+            <p className="text-sm text-gray-500">
+              The original page content would appear here
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     const previewUrl = `${window.location.origin}${pageId}`;
     
     return (
@@ -103,12 +120,12 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
 
         {/* Canvas Area */}
         <div className="flex-1 overflow-auto relative">
-          {/* Always show existing page content as background */}
-          {renderPagePreview()}
+          {/* Show existing page content as background in preview mode */}
+          {!editorState.isEditing && renderPagePreview()}
 
           {/* Editable content overlay - only show when editing */}
           {editorState.isEditing && (
-            <div className="absolute inset-0 bg-white bg-opacity-95 z-10">
+            <div className="absolute inset-0 bg-white z-10">
               <div className="max-w-7xl mx-auto p-6">
                 {blocks.length === 0 ? (
                   <div className="text-center py-12">
@@ -116,10 +133,10 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
                       Add elements to customize this page
                     </h3>
                     <p className="text-gray-600 mb-4">
-                      The existing page content is shown in the background for reference.
+                      Start adding blocks from the sidebar to build your page content.
                     </p>
                     <p className="text-sm text-gray-500">
-                      Add blocks from the sidebar to overlay new content on top of the existing page.
+                      Your changes will overlay on top of the existing page when published.
                     </p>
                   </div>
                 ) : (

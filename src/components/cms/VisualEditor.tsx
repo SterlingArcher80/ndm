@@ -56,6 +56,22 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
 
   const selectedBlock = blocks.find(b => b.id === editorState.selectedBlockId);
 
+  // Render the existing page content in an iframe for preview mode
+  const renderPagePreview = () => {
+    const currentPath = window.location.pathname;
+    const previewUrl = `${window.location.origin}${pageId}`;
+    
+    return (
+      <div className="w-full h-full">
+        <iframe
+          src={previewUrl}
+          className="w-full h-full border-0"
+          title="Page Preview"
+        />
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -87,45 +103,71 @@ export const VisualEditor: React.FC<VisualEditorProps> = ({ pageId }) => {
         />
 
         {/* Canvas Area */}
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto p-6">
-            <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-              <SortableContext 
-                items={blocks.map(b => b.id)} 
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-4">
-                  {blocks.map((block) => (
-                    <EditableBlock
-                      key={block.id}
-                      block={block}
-                      isSelected={block.id === editorState.selectedBlockId}
-                      isEditing={editorState.isEditing}
-                      onSelect={() => selectBlock(block.id)}
-                      onUpdate={(updates) => updateBlock(block.id, updates)}
-                      onDelete={() => deleteBlock(block.id)}
-                      onDuplicate={() => duplicateBlock(block.id)}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-              <DragOverlay>
-                {draggedBlock && (
-                  <div className="opacity-50">
-                    <EditableBlock
-                      block={draggedBlock}
-                      isSelected={false}
-                      isEditing={false}
-                      onSelect={() => {}}
-                      onUpdate={() => {}}
-                      onDelete={() => {}}
-                      onDuplicate={() => {}}
-                    />
+        <div className="flex-1 overflow-auto relative">
+          {/* Show existing page content as background/preview */}
+          {!editorState.isEditing && (
+            <div className="absolute inset-0">
+              {renderPagePreview()}
+            </div>
+          )}
+
+          {/* Editable content overlay */}
+          {editorState.isEditing && (
+            <div className="absolute inset-0 bg-white bg-opacity-90 z-10">
+              <div className="max-w-7xl mx-auto p-6">
+                {blocks.length === 0 ? (
+                  <div className="text-center py-12">
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Start editing this page
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Add blocks from the sidebar to begin customizing this page content.
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Your existing page content will remain intact until you publish changes.
+                    </p>
                   </div>
+                ) : (
+                  <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                    <SortableContext 
+                      items={blocks.map(b => b.id)} 
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-4">
+                        {blocks.map((block) => (
+                          <EditableBlock
+                            key={block.id}
+                            block={block}
+                            isSelected={block.id === editorState.selectedBlockId}
+                            isEditing={editorState.isEditing}
+                            onSelect={() => selectBlock(block.id)}
+                            onUpdate={(updates) => updateBlock(block.id, updates)}
+                            onDelete={() => deleteBlock(block.id)}
+                            onDuplicate={() => duplicateBlock(block.id)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                    <DragOverlay>
+                      {draggedBlock && (
+                        <div className="opacity-50">
+                          <EditableBlock
+                            block={draggedBlock}
+                            isSelected={false}
+                            isEditing={false}
+                            onSelect={() => {}}
+                            onUpdate={() => {}}
+                            onDelete={() => {}}
+                            onDuplicate={() => {}}
+                          />
+                        </div>
+                      )}
+                    </DragOverlay>
+                  </DndContext>
                 )}
-              </DragOverlay>
-            </DndContext>
-          </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

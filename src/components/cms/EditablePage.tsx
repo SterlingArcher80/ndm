@@ -29,11 +29,11 @@ export const EditablePage: React.FC<EditablePageProps> = ({
 
   return (
     <div className="relative">
-      {/* Edit Button - Fixed position */}
+      {/* Edit Button - Fixed position but more prominent */}
       {showEditButton && (
         <div className="fixed bottom-6 right-6 z-50">
           <Link to={`/cms/edit/${encodeURIComponent(pageId)}`}>
-            <Button className="shadow-lg">
+            <Button className="shadow-lg bg-blue-600 hover:bg-blue-700">
               <Edit3 className="h-4 w-4 mr-2" />
               Edit Page
             </Button>
@@ -41,25 +41,27 @@ export const EditablePage: React.FC<EditablePageProps> = ({
         </div>
       )}
 
-      {/* Render blocks if any exist */}
-      {blocks.length > 0 ? (
-        <div className="space-y-4">
-          {blocks.map((block) => (
-            <EditableBlock
-              key={block.id}
-              block={block}
-              isSelected={false}
-              isEditing={false}
-              onSelect={() => {}}
-              onUpdate={() => {}}
-              onDelete={() => {}}
-              onDuplicate={() => {}}
-            />
-          ))}
+      {/* Always render the original page content */}
+      {children}
+
+      {/* Render CMS blocks as overlay if any exist and are published */}
+      {blocks.length > 0 && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="space-y-4 pointer-events-auto">
+            {blocks.map((block) => (
+              <EditableBlock
+                key={block.id}
+                block={block}
+                isSelected={false}
+                isEditing={false}
+                onSelect={() => {}}
+                onUpdate={() => {}}
+                onDelete={() => {}}
+                onDuplicate={() => {}}
+              />
+            ))}
+          </div>
         </div>
-      ) : (
-        // Fallback to children if no blocks exist
-        children
       )}
     </div>
   );

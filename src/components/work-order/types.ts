@@ -16,6 +16,7 @@ export interface WorkOrderFile {
   mime_type?: string;
   file_path?: string;
   is_locked?: boolean;
+  is_stage_subfolder?: boolean;
 }
 
 export interface WorkOrderFolder {

@@ -28,13 +28,13 @@ export const useWorkOrderFolders = (
     const stageFolders: WorkOrderFolder[] = workflowStages
       .sort((a, b) => a.order_position - b.order_position)
       .map((stage) => {
-        // Filter items for this specific workflow stage
+        // Filter items for this specific workflow stage, excluding stage sub-folders from main content
         const stageItems = workOrderItems.filter(item => {
           console.log(`🔍 Checking item ${item.name} with workflow_stage_id: "${item.workflow_stage_id}" against stage: "${stage.id}"`);
-          return item.workflow_stage_id === stage.id;
+          return item.workflow_stage_id === stage.id && !item.is_stage_subfolder;
         });
 
-        console.log(`📋 Stage ${stage.name} has ${stageItems.length} items`);
+        console.log(`📋 Stage ${stage.name} has ${stageItems.length} items (excluding stage sub-folders)`);
 
         // Convert database items to WorkOrderFile format
         const files: WorkOrderFile[] = stageItems.map(item => ({
@@ -50,7 +50,8 @@ export const useWorkOrderFolders = (
           mime_type: item.mime_type,
           file_path: item.file_path,
           fileType: item.file_type || 'other',
-          folderPath: `uploads/${stage.name}`
+          folderPath: `uploads/${stage.name}`,
+          is_locked: item.is_locked
         }));
 
         // Filter files based on search query if provided

@@ -39,34 +39,35 @@ const WorkflowStagesManager = () => {
     () => {}  // setDeleteConfirmation - not used here
   );
 
-  // Fetch sub-folders for all workflow stages
-  const { data: subFolders = [], refetch: refetchSubFolders } = useQuery({
+  // Fetch stage sub-folders for all workflow stages
+  const { data: stageSubFolders = [], refetch: refetchStageSubFolders } = useQuery({
     queryKey: ['workflow-stage-subfolders'],
     queryFn: async () => {
-      console.log('🔍 Fetching sub-folders for workflow stages...');
+      console.log('🔍 Fetching stage sub-folders for workflow stages...');
       const { data, error } = await supabase
         .from('work_order_items')
         .select('*')
         .eq('type', 'folder')
+        .eq('is_stage_subfolder', true)
         .is('parent_id', null)
         .order('created_at', { ascending: true });
       
       if (error) {
-        console.error('❌ Error fetching sub-folders:', error);
+        console.error('❌ Error fetching stage sub-folders:', error);
         throw error;
       }
       
-      console.log('📋 Sub-folders data:', data);
+      console.log('📋 Stage sub-folders data:', data);
       return data || [];
     }
   });
 
-  // Refetch sub-folders when a new one is created
+  // Refetch stage sub-folders when a new one is created
   React.useEffect(() => {
     if (createSubFolderMutation.isSuccess) {
-      refetchSubFolders();
+      refetchStageSubFolders();
     }
-  }, [createSubFolderMutation.isSuccess, refetchSubFolders]);
+  }, [createSubFolderMutation.isSuccess, refetchStageSubFolders]);
 
   const colorOptions = [
     'bg-blue-500',
@@ -108,23 +109,33 @@ const WorkflowStagesManager = () => {
     setNewStageColor('bg-blue-500');
   };
 
-  const handleAddSubFolder = (stageId: string) => {
+  const handleAddStageSubFolder = (stageId: string) => {
     setSelectedStageForSubFolder(stageId);
     setIsSubFolderDialogOpen(true);
   };
 
-  const handleCreateSubFolder = async () => {
+  const handleCreateStageSubFolder = async () => {
     if (!newSubFolderName.trim() || !selectedStageForSubFolder) return;
     
-    console.log(`Creating sub-folder "${newSubFolderName}" in stage "${selectedStageForSubFolder}"`);
+    console.log(`Creating stage sub-folder "${newSubFolderName}" in stage "${selectedStageForSubFolder}"`);
     
-    // Create sub-folder at root level within the workflow stage
-    // parent_id should be null for root-level sub-folders within a stage
-    await createSubFolderMutation.mutateAsync({
-      name: newSubFolderName.trim(),
-      workflowStageId: selectedStageForSubFolder,
-      parentId: null // null for root-level sub-folders within a stage
-    });
+    // Create a stage sub-folder with is_stage_subfolder flag
+    const { error } = await supabase
+      .from('work_order_items')
+      .insert({
+        name: newSubFolderName.trim(),
+        type: 'folder',
+        workflow_stage_id: selectedStageForSubFolder,
+        parent_id: null,
+        is_stage_subfolder: true
+      });
+
+    if (error) {
+      console.error('❌ Error creating stage sub-folder:', error);
+    } else {
+      console.log('✅ Stage sub-folder created successfully');
+      refetchStageSubFolders();
+    }
     
     setIsSubFolderDialogOpen(false);
     setNewSubFolderName('');
@@ -136,13 +147,13 @@ const WorkflowStagesManager = () => {
     setDeleteDialogOpen(null);
   };
 
-  const handleDeleteSubFolder = async (subFolderId: string) => {
+  const handleDeleteStageSubFolder = async (subFolderId: string) => {
     await deleteItemMutation.mutateAsync(subFolderId);
-    refetchSubFolders();
+    refetchStageSubFolders();
   };
 
-  const getSubFoldersForStage = (stageId: string) => {
-    return subFolders.filter(folder => folder.workflow_stage_id === stageId);
+  const getStageSubFoldersForStage = (stageId: string) => {
+    return stageSubFolders.filter(folder => folder.workflow_stage_id === stageId);
   };
 
   const handleDragEnd = (result: DropResult) => {
@@ -179,7 +190,7 @@ const WorkflowStagesManager = () => {
           <div>
             <CardTitle>Workflow Stages</CardTitle>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Manage the workflow stages for your work orders. Drag to reorder, click edit to rename, and add sub-folders for better organization.
+              Manage the workflow stages for your work orders. Drag to reorder, click edit to rename, and add stage sub-folders for better organization.
             </p>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -240,7 +251,7 @@ const WorkflowStagesManager = () => {
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-2">
                 {stages.map((stage, index) => {
-                  const stageSubFolders = getSubFoldersForStage(stage.id);
+                  const stageSubFolders = getStageSubFoldersForStage(stage.id);
                   return (
                     <Draggable key={stage.id} draggableId={stage.id} index={index}>
                       {(provided, snapshot) => (
@@ -302,8 +313,8 @@ const WorkflowStagesManager = () => {
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => handleAddSubFolder(stage.id)}
-                                    title="Add sub-folder"
+                                    onClick={() => handleAddStageSubFolder(stage.id)}
+                                    title="Add stage sub-folder"
                                   >
                                     <FolderPlus className="h-4 w-4" />
                                   </Button>
@@ -350,11 +361,11 @@ const WorkflowStagesManager = () => {
                             </div>
                           </div>
 
-                          {/* Sub-folders for this stage */}
+                          {/* Stage sub-folders for this stage */}
                           {stageSubFolders.length > 0 && (
                             <div className="px-4 pb-4">
                               <div className="border-t pt-3">
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Sub-folders:</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Stage Sub-Folders:</p>
                                 <div className="space-y-1">
                                   {stageSubFolders.map((subFolder) => (
                                     <div
@@ -370,7 +381,7 @@ const WorkflowStagesManager = () => {
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() => handleDeleteSubFolder(subFolder.id)}
+                                        onClick={() => handleDeleteStageSubFolder(subFolder.id)}
                                         className="text-red-600 hover:text-red-700 hover:bg-red-50 h-6 w-6 p-0"
                                       >
                                         <X className="h-3 w-3" />
@@ -392,23 +403,23 @@ const WorkflowStagesManager = () => {
           </Droppable>
         </DragDropContext>
 
-        {/* Sub-folder creation dialog */}
+        {/* Stage sub-folder creation dialog */}
         <Dialog open={isSubFolderDialogOpen} onOpenChange={setIsSubFolderDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Sub-Folder</DialogTitle>
+              <DialogTitle>Add Stage Sub-Folder</DialogTitle>
               <DialogDescription>
-                Create a new sub-folder within the selected workflow stage.
+                Create a new sub-folder that will appear in the sidebar under the selected workflow stage.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="subfolder-name">Sub-Folder Name</Label>
+                <Label htmlFor="stage-subfolder-name">Stage Sub-Folder Name</Label>
                 <Input
-                  id="subfolder-name"
+                  id="stage-subfolder-name"
                   value={newSubFolderName}
                   onChange={(e) => setNewSubFolderName(e.target.value)}
-                  placeholder="Enter sub-folder name"
+                  placeholder="Enter stage sub-folder name"
                 />
               </div>
             </div>
@@ -417,10 +428,10 @@ const WorkflowStagesManager = () => {
                 Cancel
               </Button>
               <Button 
-                onClick={handleCreateSubFolder} 
-                disabled={!newSubFolderName.trim() || createSubFolderMutation.isPending}
+                onClick={handleCreateStageSubFolder} 
+                disabled={!newSubFolderName.trim()}
               >
-                {createSubFolderMutation.isPending ? 'Creating...' : 'Create Sub-Folder'}
+                Create Stage Sub-Folder
               </Button>
             </DialogFooter>
           </DialogContent>

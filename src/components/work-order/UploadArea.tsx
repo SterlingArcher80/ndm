@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from 'react';
 import { Upload, FolderPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -131,16 +130,16 @@ const UploadArea = ({ selectedFolder, currentPath, folders }: UploadAreaProps) =
       <div className="p-8 text-center">
         <div className="flex justify-center items-center mb-4">
           <Upload className={`h-12 w-12 mr-2 ${
-            isDragOver ? 'text-primary' : 'text-muted-foreground'
+            isDragOver ? 'text-primary' : 'text-white dark:text-muted-foreground'
           }`} />
           <FolderPlus className={`h-12 w-12 ${
-            isDragOver ? 'text-primary' : 'text-muted-foreground'
+            isDragOver ? 'text-primary' : 'text-white dark:text-muted-foreground'
           }`} />
         </div>
-        <h3 className="text-lg font-medium text-foreground mb-2">
+        <h3 className="text-lg font-medium text-white dark:text-foreground mb-2">
           Drop files or folders here
         </h3>
-        <p className="text-muted-foreground mb-4">
+        <p className="text-white/80 dark:text-muted-foreground mb-4">
           Support for individual files, folders, and nested folder structures
         </p>
         <div className="space-x-2">

@@ -14,45 +14,54 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
 } from '@/components/ui/sidebar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useThemePreference } from '../hooks/useThemePreference';
 
 // Helper to validate theme
-const allowedThemes = ["light", "dark", "system"] as const;
+const allowedThemes = ["light", "dark", "default"] as const;
 type Theme = typeof allowedThemes[number];
-function normalizeTheme(theme: string): Theme {
-  return allowedThemes.includes(theme as Theme) ? (theme as Theme) : "system";
-}
 
 const ThemeSelector = () => {
   const { theme, setTheme } = useThemePreference();
-  const options = [
-    { name: 'System', value: 'system' as Theme, icon: Monitor },
+  
+  const themeOptions = [
+    { name: 'Default', value: 'default' as Theme, icon: Monitor },
     { name: 'Light', value: 'light' as Theme, icon: Sun },
     { name: 'Dark', value: 'dark' as Theme, icon: Moon },
   ];
 
+  const currentTheme = themeOptions.find(option => option.value === theme);
+
   return (
     <div className="mb-4">
-      <label className="block text-xs text-muted-foreground pl-1 mb-1">Theme</label>
-      <div className="flex gap-1">
-        {options.map(({ name, value, icon: Icon }) => (
-          <button
-            key={value}
-            aria-label={`Switch to ${name} mode`}
-            className={`flex-1 flex items-center gap-1 px-2 py-1 rounded transition ${
-              theme === value
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            }`}
-            onClick={() => setTheme(value)}
-            type="button"
-          >
-            <Icon className="w-4 h-4" />
-            <span className="text-xs">{name}</span>
-          </button>
-        ))}
-      </div>
+      <label className="block text-xs text-muted-foreground pl-1 mb-2">Theme</label>
+      <Select value={theme} onValueChange={(value: Theme) => setTheme(value)}>
+        <SelectTrigger className="w-full">
+          <SelectValue>
+            <div className="flex items-center gap-2">
+              {currentTheme && <currentTheme.icon className="w-4 h-4" />}
+              <span>{currentTheme?.name || 'Default'}</span>
+            </div>
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {themeOptions.map(({ name, value, icon: Icon }) => (
+            <SelectItem key={value} value={value}>
+              <div className="flex items-center gap-2">
+                <Icon className="w-4 h-4" />
+                <span>{name}</span>
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 };

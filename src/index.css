@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -90,6 +91,48 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+
+  .default {
+    /* Blue-teal gradient theme */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 27%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 27%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 27%;
+
+    --primary: 200 100% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 175 70% 41%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 197 71% 73%;
+    --accent-foreground: 215 25% 27%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 200 100% 40%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 27%;
+    --sidebar-primary: 200 100% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 215 25% 27%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 200 100% 40%;
+  }
 }
 
 @layer base {
@@ -99,5 +142,48 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Default theme specific styles */
+  .default body {
+    @apply bg-gradient-to-br from-slate-50 to-blue-50;
+  }
+
+  .default .card,
+  .default [class*="card"] {
+    @apply rounded-xl shadow-lg bg-white/95 backdrop-blur-sm;
+  }
+
+  .default .btn-primary,
+  .default [class*="primary"] {
+    @apply bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-800 hover:to-teal-700;
+  }
+
+  .default .btn-secondary {
+    @apply bg-gradient-to-r from-green-500 to-teal-500;
+  }
+
+  .default .glass-effect {
+    @apply bg-white/10 backdrop-blur-sm;
+  }
+
+  .default .status-blue {
+    @apply bg-blue-50 text-blue-800 border-blue-200;
+  }
+
+  .default .status-green {
+    @apply bg-green-50 text-green-800 border-green-200;
+  }
+
+  .default .status-red {
+    @apply bg-red-50 text-red-800 border-red-200;
+  }
+
+  .default .status-yellow {
+    @apply bg-yellow-50 text-yellow-800 border-yellow-200;
+  }
+
+  .default * {
+    @apply transition-all duration-200;
   }
 }

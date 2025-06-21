@@ -4,21 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 // Only allow exactly these themes
-const allowedThemes = ["light", "dark", "system"] as const;
+const allowedThemes = ["light", "dark", "default"] as const;
 type Theme = typeof allowedThemes[number];
 function normalizeTheme(theme: string): Theme {
-  return allowedThemes.includes(theme as Theme) ? (theme as Theme) : "system";
+  // Migrate old "system" theme to "default"
+  if (theme === "system") return "default";
+  return allowedThemes.includes(theme as Theme) ? (theme as Theme) : "default";
 }
 
 export function useThemePreference() {
   const { user } = useAuth();
   const [theme, setThemeState] = useState<Theme>(() => {
-    // On first run, try to detect from localStorage or default to "system"
+    // On first run, try to detect from localStorage or default to "default"
     if (typeof window !== "undefined") {
       const local = window.localStorage.getItem("theme");
-      return normalizeTheme(local || "system");
+      return normalizeTheme(local || "default");
     }
-    return "system";
+    return "default";
   });
 
   // Load from supabase profile (if present) on mount or user change
@@ -31,9 +33,10 @@ export function useThemePreference() {
       .maybeSingle()
       .then(({ data }) => {
         if (data?.theme) {
-          setThemeState(normalizeTheme(data.theme));
-          applyTheme(data.theme);
-          window.localStorage.setItem("theme", data.theme);
+          const normalizedTheme = normalizeTheme(data.theme);
+          setThemeState(normalizedTheme);
+          applyTheme(normalizedTheme);
+          window.localStorage.setItem("theme", normalizedTheme);
         }
       });
   }, [user]);
@@ -60,13 +63,8 @@ export function useThemePreference() {
   function applyTheme(t: string) {
     const html = document.documentElement;
     const themeToApply = normalizeTheme(t);
-    html.classList.remove("light", "dark");
-    if (themeToApply === "system") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      html.classList.add(prefersDark ? "dark" : "light");
-    } else {
-      html.classList.add(themeToApply);
-    }
+    html.classList.remove("light", "dark", "default");
+    html.classList.add(themeToApply);
   }
 
   return { theme, setTheme };

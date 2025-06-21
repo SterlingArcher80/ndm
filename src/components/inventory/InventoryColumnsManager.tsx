@@ -9,15 +9,12 @@ import { Plus, Edit, Trash2, GripVertical } from 'lucide-react';
 import AddColumnDialog from './AddColumnDialog';
 import EditColumnDialog from './EditColumnDialog';
 import DeleteColumnDialog from './DeleteColumnDialog';
-import EditDefaultColumnDialog from './EditDefaultColumnDialog';
 import { toast } from 'sonner';
 
-// Default columns that are built into the system
-const DEFAULT_COLUMNS = [
+// Only core system columns that cannot be modified (name, sku, quantity)
+const CORE_SYSTEM_COLUMNS = [
   { id: 'name', name: 'name', label: 'Name', type: 'text', is_required: true, order_position: -5 },
   { id: 'sku', name: 'sku', label: 'SKU', type: 'text', is_required: true, order_position: -4 },
-  { id: 'category', name: 'category', label: 'Category', type: 'text', is_required: false, order_position: -3 },
-  { id: 'location', name: 'location', label: 'Location', type: 'text', is_required: false, order_position: -2 },
   { id: 'quantity', name: 'quantity', label: 'Quantity', type: 'number', is_required: true, order_position: -1 },
 ];
 
@@ -41,9 +38,9 @@ const InventoryColumnsManager = () => {
     },
   });
 
-  // Combine default and custom columns for display
+  // Combine core system and custom columns for display
   const allColumns = [
-    ...DEFAULT_COLUMNS,
+    ...CORE_SYSTEM_COLUMNS,
     ...(customColumns || [])
   ].sort((a, b) => a.order_position - b.order_position);
 
@@ -69,7 +66,7 @@ const InventoryColumnsManager = () => {
   const moveColumn = (columnId: string, direction: 'up' | 'down') => {
     if (!customColumns) return;
     
-    // Only allow moving custom columns (not default ones)
+    // Only allow moving custom columns (not core system ones)
     const customColumnIds = customColumns.map(col => col.id);
     if (!customColumnIds.includes(columnId)) return;
     
@@ -82,8 +79,8 @@ const InventoryColumnsManager = () => {
     updateOrderMutation.mutate({ columnId, newPosition });
   };
 
-  const isDefaultColumn = (columnId: string) => {
-    return DEFAULT_COLUMNS.some(col => col.id === columnId);
+  const isCoreSystemColumn = (columnId: string) => {
+    return CORE_SYSTEM_COLUMNS.some(col => col.id === columnId);
   };
 
   if (isLoading) {
@@ -102,7 +99,7 @@ const InventoryColumnsManager = () => {
             <div>
               <CardTitle>Inventory Columns</CardTitle>
               <CardDescription>
-                Manage all columns for your inventory items, including default and custom fields
+                Manage all columns for your inventory items. Core columns (Name, SKU, Quantity) have limited editing options.
               </CardDescription>
             </div>
             <AddColumnDialog />
@@ -128,13 +125,13 @@ const InventoryColumnsManager = () => {
                     <TableCell>
                       <div className="flex items-center space-x-1">
                         <GripVertical className="h-4 w-4 text-gray-400" />
-                        {!isDefaultColumn(column.id) && (
+                        {!isCoreSystemColumn(column.id) && (
                           <div className="flex flex-col space-y-1">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => moveColumn(column.id, 'up')}
-                              disabled={index === DEFAULT_COLUMNS.length}
+                              disabled={index === CORE_SYSTEM_COLUMNS.length}
                               className="h-6 w-6 p-0"
                             >
                               ↑
@@ -165,16 +162,16 @@ const InventoryColumnsManager = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {isDefaultColumn(column.id) ? (
-                        <span className="text-blue-600 font-medium">System</span>
+                      {isCoreSystemColumn(column.id) ? (
+                        <span className="text-blue-600 font-medium">Core System</span>
                       ) : (
                         <span className="text-green-600 font-medium">Custom</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        {isDefaultColumn(column.id) ? (
-                          <EditDefaultColumnDialog column={column} />
+                        {isCoreSystemColumn(column.id) ? (
+                          <span className="text-gray-400 text-sm">Limited editing</span>
                         ) : (
                           <>
                             <EditColumnDialog column={column} />

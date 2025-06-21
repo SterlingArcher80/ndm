@@ -51,7 +51,8 @@ export const useWorkOrderFolders = (
           file_path: item.file_path,
           fileType: item.file_type || 'other',
           folderPath: `uploads/${stage.name}`,
-          is_locked: item.is_locked
+          is_locked: item.is_locked,
+          is_stage_subfolder: item.is_stage_subfolder
         }));
 
         // Filter files based on search query if provided

@@ -568,6 +568,7 @@ export type Database = {
           file_url: string | null
           id: string
           is_locked: boolean
+          is_stage_subfolder: boolean
           mime_type: string | null
           name: string
           parent_id: string | null
@@ -583,6 +584,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_locked?: boolean
+          is_stage_subfolder?: boolean
           mime_type?: string | null
           name: string
           parent_id?: string | null
@@ -598,6 +600,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_locked?: boolean
+          is_stage_subfolder?: boolean
           mime_type?: string | null
           name?: string
           parent_id?: string | null

@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -14,18 +13,41 @@ export const useFolderMutations = (
   // Mutation for creating new folder (including sub-folders)
   const createFolderMutation = useMutation({
     mutationFn: async ({ name, workflowStageId, parentId }: { name: string; workflowStageId: string; parentId?: string }) => {
+      console.log(`🗂️ Creating folder: ${name} in stage: ${workflowStageId}${parentId ? ` under parent: ${parentId}` : ''}`);
+
+      // If parentId exists, we need to check if it's a stage sub-folder
+      let actualWorkflowStageId = workflowStageId;
+      
+      if (parentId) {
+        // Get parent information to determine the correct workflow_stage_id
+        const { data: parentData, error: parentError } = await supabase
+          .from('work_order_items')
+          .select('workflow_stage_id, is_stage_subfolder')
+          .eq('id', parentId)
+          .single();
+
+        if (parentError) {
+          console.error('Error fetching parent data:', parentError);
+          throw parentError;
+        }
+
+        // If parent is a stage sub-folder, use its workflow_stage_id
+        if (parentData?.is_stage_subfolder) {
+          actualWorkflowStageId = parentData.workflow_stage_id;
+          console.log(`📁 Parent is stage sub-folder, using workflow_stage_id: ${actualWorkflowStageId}`);
+        }
+      }
+
       const folderPath = parentId 
         ? `uploads/nested/${name}`
         : `uploads/${name}`;
-
-      console.log(`🗂️ Creating ${parentId ? 'sub-folder' : 'folder'}: ${name} in stage: ${workflowStageId}${parentId ? ` under parent: ${parentId}` : ''}`);
 
       const { data, error } = await supabase
         .from('work_order_items')
         .insert({
           name: name.trim(),
           type: 'folder',
-          workflow_stage_id: workflowStageId,
+          workflow_stage_id: actualWorkflowStageId,
           parent_id: parentId || null,
           file_path: folderPath
         })
@@ -37,10 +59,13 @@ export const useFolderMutations = (
         throw error;
       }
 
+      console.log(`✅ Created folder successfully:`, data);
       return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-stage-subfolders'] });
+      queryClient.invalidateQueries({ queryKey: ['workflow-stage-subfolders-main'] });
       const folderType = data.parent_id ? 'Sub-folder' : 'Folder';
       toast.success(`${folderType} "${data.name}" created successfully`);
       setShowNewFolderDialog(false);

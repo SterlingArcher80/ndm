@@ -37,6 +37,7 @@ const WorkOrderRepository = () => {
       }
       
       console.log('📋 Raw data from database:', data);
+      console.log(`📊 Total items found: ${data?.length || 0}`);
       
       // Log each item to debug field mapping
       data?.forEach((item, index) => {
@@ -51,13 +52,39 @@ const WorkOrderRepository = () => {
           file_path: item.file_path,
           workflow_stage_id: item.workflow_stage_id,
           parent_id: item.parent_id,
-          is_locked: (item as any).is_locked // Temporary type assertion until types are updated
+          is_locked: (item as any).is_locked,
+          is_stage_subfolder: item.is_stage_subfolder,
+          created_at: item.created_at,
+          updated_at: item.updated_at
         });
       });
+
+      // Group by workflow stage for debugging
+      const groupedByStage = data?.reduce((acc, item) => {
+        const stage = item.workflow_stage_id || 'no-stage';
+        if (!acc[stage]) acc[stage] = [];
+        acc[stage].push(item);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      console.log('📊 Items grouped by workflow stage:', groupedByStage);
       
       return data || [];
     }
   });
+
+  // Add effect to log when items change
+  React.useEffect(() => {
+    console.log('📋 WorkOrderRepository items updated:', {
+      totalItems: workOrderItems.length,
+      selectedFolder,
+      currentPath,
+      itemsByType: workOrderItems.reduce((acc, item) => {
+        acc[item.type] = (acc[item.type] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>)
+    });
+  }, [workOrderItems, selectedFolder, currentPath]);
 
   return (
     <div className="min-h-[900px] bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800">

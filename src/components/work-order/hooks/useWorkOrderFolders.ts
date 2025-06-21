@@ -23,6 +23,7 @@ export const useWorkOrderFolders = (
 
     console.log('🔍 Processing work order folders with stages:', workflowStages);
     console.log('📋 Work order items to process:', workOrderItems);
+    console.log('🔎 Search query:', searchQuery);
 
     // Create folders based on workflow stages from database
     const stageFolders: WorkOrderFolder[] = workflowStages
@@ -30,36 +31,44 @@ export const useWorkOrderFolders = (
       .map((stage) => {
         // Filter items for this specific workflow stage, excluding stage sub-folders from main content
         const stageItems = workOrderItems.filter(item => {
-          console.log(`🔍 Checking item ${item.name} with workflow_stage_id: "${item.workflow_stage_id}" against stage: "${stage.id}"`);
-          return item.workflow_stage_id === stage.id && !item.is_stage_subfolder;
+          const matches = item.workflow_stage_id === stage.id && !item.is_stage_subfolder;
+          console.log(`🔍 Checking item "${item.name}" (stage: ${item.workflow_stage_id}, is_stage_subfolder: ${item.is_stage_subfolder}) against stage "${stage.id}": ${matches ? 'MATCH' : 'NO MATCH'}`);
+          return matches;
         });
 
-        console.log(`📋 Stage ${stage.name} has ${stageItems.length} items (excluding stage sub-folders)`);
+        console.log(`📋 Stage "${stage.name}" has ${stageItems.length} items (excluding stage sub-folders)`);
 
         // Convert database items to WorkOrderFile format
-        const files: WorkOrderFile[] = stageItems.map(item => ({
-          id: item.id,
-          name: item.name,
-          type: item.type as 'file' | 'folder',
-          size: item.file_size,
-          file_size: item.file_size,
-          modifiedDate: new Date(item.updated_at).toLocaleDateString(),
-          workflow_stage_id: item.workflow_stage_id,
-          parent_id: item.parent_id,
-          file_url: item.file_url,
-          mime_type: item.mime_type,
-          file_path: item.file_path,
-          fileType: item.file_type || 'other',
-          folderPath: `uploads/${stage.name}`,
-          is_locked: item.is_locked,
-          is_stage_subfolder: item.is_stage_subfolder
-        }));
+        const files: WorkOrderFile[] = stageItems.map(item => {
+          const convertedFile = {
+            id: item.id,
+            name: item.name,
+            type: item.type as 'file' | 'folder',
+            size: item.file_size,
+            file_size: item.file_size,
+            modifiedDate: new Date(item.updated_at).toLocaleDateString(),
+            workflow_stage_id: item.workflow_stage_id,
+            parent_id: item.parent_id,
+            file_url: item.file_url,
+            mime_type: item.mime_type,
+            file_path: item.file_path,
+            fileType: item.file_type || 'other',
+            folderPath: `uploads/${stage.name}`,
+            is_locked: item.is_locked,
+            is_stage_subfolder: item.is_stage_subfolder
+          };
+          
+          console.log(`📄 Converted item "${item.name}" to WorkOrderFile:`, convertedFile);
+          return convertedFile;
+        });
 
         // Filter files based on search query if provided
         const filteredFiles = searchQuery 
-          ? files.filter(file => 
-              file.name.toLowerCase().includes(searchQuery.toLowerCase())
-            )
+          ? files.filter(file => {
+              const matches = file.name.toLowerCase().includes(searchQuery.toLowerCase());
+              console.log(`🔎 Search filter "${file.name}" with query "${searchQuery}": ${matches ? 'MATCH' : 'NO MATCH'}`);
+              return matches;
+            })
           : files;
 
         const folder: WorkOrderFolder = {
@@ -71,11 +80,16 @@ export const useWorkOrderFolders = (
           folderPath: `uploads/${stage.name}`
         };
 
-        console.log(`📁 Created folder for ${stage.name} with ${filteredFiles.length} files`);
+        console.log(`📁 Created folder for "${stage.name}" with ${filteredFiles.length} files:`, filteredFiles.map(f => f.name));
         return folder;
       });
 
-    console.log('📁 Generated folders:', stageFolders.map(f => ({ name: f.name, count: f.count })));
+    console.log('📁 Final generated folders:', stageFolders.map(f => ({ 
+      name: f.name, 
+      count: f.count, 
+      fileNames: f.files.map(file => file.name) 
+    })));
+    
     return stageFolders;
   }, [workOrderItems, searchQuery, workflowStages]);
 

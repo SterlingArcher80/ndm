@@ -69,7 +69,7 @@ const WorkflowStageItem = ({
           <div className="flex-1">
             <div className="font-medium text-gray-900 dark:text-white">{folder.name}</div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              {hasSubFolders ? `${stageSubFolders.length} sub-stages` : `${folderCount} folders`}
+              {hasSubFolders ? `${stageSubFolders.length} sub-folders` : `${folderCount} folders`}
             </div>
           </div>
           {!hasSubFolders && (
@@ -82,7 +82,7 @@ const WorkflowStageItem = ({
 
       {/* Stage sub-folders (nested with more indentation) */}
       {hasSubFolders && isExpanded && (
-        <div className="ml-10 space-y-1">
+        <div className="ml-12 space-y-1">
           {stageSubFolders.map((subFolder) => {
             const subFolderCount = folderCounts[subFolder.id] || 0;
             
@@ -95,7 +95,7 @@ const WorkflowStageItem = ({
                     : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                 }`}
                 onClick={() => onStageSubFolderClick(subFolder)}
-                title={`Stage sub-folder: ${subFolder.name}`}
+                title={`Sub-folder: ${subFolder.name}`}
               >
                 <Folder className="h-4 w-4 text-blue-500 mr-2" />
                 <div className="flex-1">

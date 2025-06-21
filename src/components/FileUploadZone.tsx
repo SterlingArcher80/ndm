@@ -97,12 +97,12 @@ const FileUploadZone = () => {
       >
         <div className="p-8 text-center">
           <Upload className={`h-12 w-12 mx-auto mb-4 ${
-            isDragOver ? 'text-blue-500' : 'text-gray-400 dark:text-gray-500'
+            isDragOver ? 'text-blue-500' : 'text-white dark:text-gray-400'
           }`} />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          <h3 className="text-lg font-medium text-white dark:text-white mb-2">
             Drop files here or click to upload
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-white/80 dark:text-gray-400 mb-4">
             Support for PDF, DOC, DOCX, XLS, XLSX, and image files
           </p>
           <Button 

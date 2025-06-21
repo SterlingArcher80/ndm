@@ -58,7 +58,7 @@ export const useWorkOrderActions = () => {
         parentId = selectedFolder; // The sub-folder itself is the parent
         console.log('🔍 Using stage sub-folder context:', { workflowStageId, parentId });
       } else {
-        // Check if selectedFolder is a regular workflow stage
+        // Check if selectedFolder is a regular workflow stage by ID (string, not UUID)
         const workflowStage = folders.find(f => f.id === selectedFolder);
         if (workflowStage) {
           // Regular workflow stage navigation
@@ -66,9 +66,29 @@ export const useWorkOrderActions = () => {
           parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
           console.log('🔍 Using workflow stage context:', { workflowStageId, parentId });
         } else {
-          console.error('❌ Could not determine upload context for selectedFolder:', selectedFolder);
-          toast.error('Invalid folder selection');
-          return;
+          // Last check: see if selectedFolder is a UUID that matches any item in any stage
+          let foundContext = false;
+          for (const stage of folders) {
+            const foundItem = stage.files.find((item: any) => item.id === selectedFolder);
+            if (foundItem) {
+              // Found the item, use the stage it belongs to
+              workflowStageId = stage.id;
+              if (foundItem.is_stage_subfolder) {
+                parentId = selectedFolder; // The sub-folder itself is the parent
+              } else {
+                parentId = foundItem.parent_id || undefined;
+              }
+              console.log('🔍 Found item context:', { workflowStageId, parentId, foundItem });
+              foundContext = true;
+              break;
+            }
+          }
+          
+          if (!foundContext) {
+            console.error('❌ Could not determine upload context for selectedFolder:', selectedFolder);
+            toast.error('Invalid folder selection');
+            return;
+          }
         }
       }
       

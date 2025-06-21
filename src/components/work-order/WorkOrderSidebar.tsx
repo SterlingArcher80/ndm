@@ -82,13 +82,18 @@ const WorkOrderSidebar = ({
   };
 
   const handleStageClick = (stageId: string) => {
+    console.log('🔍 Stage clicked:', stageId);
     setSelectedFolder(stageId);
     setCurrentPath([]);
   };
 
-  const handleStageSubFolderClick = (subFolderId: string) => {
-    setSelectedFolder(subFolderId);
-    setCurrentPath([]);
+  const handleStageSubFolderClick = (subFolder: any) => {
+    console.log('🔍 Stage sub-folder clicked:', subFolder);
+    // Set the selected folder to the sub-folder ID
+    setSelectedFolder(subFolder.id);
+    // Set current path to indicate we're in a stage sub-folder context
+    // The path includes the parent stage ID for proper breadcrumb construction
+    setCurrentPath([subFolder.workflow_stage_id, subFolder.id]);
   };
 
   if (stagesLoading) {
@@ -124,7 +129,7 @@ const WorkOrderSidebar = ({
                 {/* Main workflow stage */}
                 <div
                   className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-                    selectedFolder === folder.id
+                    selectedFolder === folder.id && currentPath.length === 0
                       ? 'bg-blue-100 dark:bg-blue-900/30 border-l-4 border-blue-500'
                       : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
@@ -171,11 +176,11 @@ const WorkOrderSidebar = ({
                       <div
                         key={subFolder.id}
                         className={`flex items-center p-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                          selectedFolder === subFolder.id
+                          currentPath.length > 1 && currentPath[1] === subFolder.id
                             ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400'
                             : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                         }`}
-                        onClick={() => handleStageSubFolderClick(subFolder.id)}
+                        onClick={() => handleStageSubFolderClick(subFolder)}
                         title={`Stage sub-folder: ${subFolder.name}`}
                       >
                         <Folder className="h-4 w-4 text-blue-500 mr-2" />

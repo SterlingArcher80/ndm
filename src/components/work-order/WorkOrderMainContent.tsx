@@ -8,6 +8,8 @@ import MoveItemDialog from './MoveItemDialog';
 import { useWorkOrderNavigation } from './hooks/useWorkOrderNavigation';
 import { useWorkOrderFolders } from './hooks/useWorkOrderFolders';
 import { useWorkflowStages } from './hooks/useWorkflowStages';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { WorkOrderFile } from './types';
 
 interface WorkOrderMainContentProps {
@@ -36,6 +38,23 @@ const WorkOrderMainContent = ({
 
   const { stages } = useWorkflowStages();
   const { folders } = useWorkOrderFolders(workOrderItems, searchQuery, stages);
+  
+  // Fetch stage sub-folders for context
+  const { data: stageSubFolders = [] } = useQuery({
+    queryKey: ['workflow-stage-subfolders-main'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('work_order_items')
+        .select('*')
+        .eq('type', 'folder')
+        .eq('is_stage_subfolder', true)
+        .is('parent_id', null);
+      
+      if (error) throw error;
+      return data || [];
+    }
+  });
+  
   const { 
     getCurrentFolderContents, 
     getBreadcrumbPath, 
@@ -53,6 +72,23 @@ const WorkOrderMainContent = ({
   // Calculate folder count for display
   const folderCount = currentContents.filter(item => item.type === 'folder').length;
 
+  // Determine the current context for header display
+  const getCurrentContextName = () => {
+    if (!selectedFolder || breadcrumbPath.length === 0) return 'Select a folder';
+    
+    // Check if we're in a stage sub-folder
+    const stageSubFolder = stageSubFolders.find(sf => sf.id === selectedFolder);
+    if (stageSubFolder) {
+      const parentStage = folders.find(f => f.id === stageSubFolder.workflow_stage_id);
+      if (parentStage) {
+        return `${parentStage.name} → ${stageSubFolder.name}`;
+      }
+    }
+    
+    // Regular workflow stage or nested folder
+    return breadcrumbPath[breadcrumbPath.length - 1]?.name || 'Select a folder';
+  };
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
       <div className="flex-1 p-6 overflow-y-auto">
@@ -67,7 +103,7 @@ const WorkOrderMainContent = ({
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {breadcrumbPath.length > 0 ? breadcrumbPath[breadcrumbPath.length - 1].name : 'Select a folder'}
+                  {getCurrentContextName()}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
                   {folderCount} folders, {currentContents.length - folderCount} files

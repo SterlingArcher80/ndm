@@ -40,6 +40,21 @@ export const useWorkOrderFolders = (
 
         // Convert database items to WorkOrderFile format
         const files: WorkOrderFile[] = stageItems.map(item => {
+          // Determine the correct folder path based on item type
+          let itemFolderPath = `uploads/${stage.name}`;
+          
+          if (item.is_stage_subfolder) {
+            // Stage sub-folders should show their parent stage path
+            itemFolderPath = `uploads/${stage.name}`;
+          } else if (item.parent_id) {
+            // Regular items with parents - find the parent to build the path
+            const parentItem = stageItems.find(si => si.id === item.parent_id);
+            if (parentItem && parentItem.is_stage_subfolder) {
+              // If parent is a stage sub-folder, include it in the path
+              itemFolderPath = `uploads/${stage.name}/${parentItem.name}`;
+            }
+          }
+
           const convertedFile = {
             id: item.id,
             name: item.name,
@@ -53,12 +68,12 @@ export const useWorkOrderFolders = (
             mime_type: item.mime_type,
             file_path: item.file_path,
             fileType: item.file_type || 'other',
-            folderPath: `uploads/${stage.name}`,
+            folderPath: itemFolderPath,
             is_locked: item.is_locked,
             is_stage_subfolder: item.is_stage_subfolder
           };
           
-          console.log(`📄 Converted item "${item.name}" to WorkOrderFile:`, convertedFile);
+          console.log(`📄 Converted item "${item.name}" to WorkOrderFile with folderPath: ${itemFolderPath}`, convertedFile);
           return convertedFile;
         });
 

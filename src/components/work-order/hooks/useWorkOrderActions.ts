@@ -32,14 +32,35 @@ export const useWorkOrderActions = () => {
       // Convert FileList to File[] if needed
       const fileArray = Array.isArray(files) ? files : Array.from(files);
       
-      // Determine parent ID based on current path
-      const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
+      // Determine the correct workflow stage ID and parent ID
+      let workflowStageId = selectedFolder;
+      let parentId: string | undefined;
+      
+      // Check if selectedFolder is actually a stage sub-folder ID
+      const allStageSubFolders = folders.flatMap(stage => 
+        stage.files.filter((item: any) => item.is_stage_subfolder)
+      );
+      
+      const stageSubFolder = allStageSubFolders.find(sf => sf.id === selectedFolder);
+      
+      if (stageSubFolder) {
+        // We're in a stage sub-folder, so use its workflow_stage_id as the main stage
+        workflowStageId = stageSubFolder.workflow_stage_id;
+        parentId = selectedFolder; // The sub-folder itself is the parent
+      } else {
+        // Regular workflow stage navigation
+        parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
+      }
       
       // Build folder path
-      const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
-      let folderPath = selectedWorkflowFolder?.folderPath || `uploads/stage-${selectedFolder}`;
+      const selectedWorkflowFolder = folders.find(f => f.id === workflowStageId);
+      let folderPath = selectedWorkflowFolder?.folderPath || `uploads/stage-${workflowStageId}`;
       
-      if (currentPath.length > 0 && selectedWorkflowFolder) {
+      if (stageSubFolder) {
+        // For stage sub-folders, include the sub-folder name in the path
+        folderPath = `${folderPath}/${stageSubFolder.name}`;
+      } else if (currentPath.length > 0 && selectedWorkflowFolder) {
+        // Regular nested folder path building
         const pathSegments = [selectedWorkflowFolder.folderPath];
         let currentItems = selectedWorkflowFolder.files;
         
@@ -56,9 +77,17 @@ export const useWorkOrderActions = () => {
         folderPath = pathSegments.join('/');
       }
       
+      console.log('📁 Upload context:', {
+        selectedFolder,
+        workflowStageId,
+        parentId,
+        folderPath,
+        isStageSubFolder: !!stageSubFolder
+      });
+      
       await uploadMultipleFiles(
         fileArray, 
-        selectedFolder, 
+        workflowStageId, 
         parentId,
         folderPath
       );

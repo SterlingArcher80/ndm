@@ -58,30 +58,53 @@ const UploadArea = ({ selectedFolder, currentPath, folders }: UploadAreaProps) =
       }
     }
 
-    if (hasFolders) {
-      console.log('📁 Folder structure detected, processing...');
-      const parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
-      const selectedWorkflowFolder = folders.find(f => f.id === selectedFolder);
-      let folderPath = selectedWorkflowFolder?.folderPath || `uploads/stage-${selectedFolder}`;
+    // Determine the correct workflow stage ID and parent ID for drag & drop
+    let workflowStageId = selectedFolder;
+    let parentId: string | undefined;
+    
+    // Check if selectedFolder is actually a stage sub-folder ID
+    const allStageSubFolders = folders.flatMap(stage => 
+      stage.files.filter((item: any) => item.is_stage_subfolder)
+    );
+    
+    const stageSubFolder = allStageSubFolders.find(sf => sf.id === selectedFolder);
+    
+    if (stageSubFolder) {
+      // We're in a stage sub-folder
+      workflowStageId = stageSubFolder.workflow_stage_id;
+      parentId = selectedFolder; // The sub-folder itself is the parent
+    } else {
+      // Regular workflow stage navigation
+      parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
+    }
+
+    const selectedWorkflowFolder = folders.find(f => f.id === workflowStageId);
+    let folderPath = selectedWorkflowFolder?.folderPath || `uploads/stage-${workflowStageId}`;
+    
+    if (stageSubFolder) {
+      // For stage sub-folders, include the sub-folder name in the path
+      folderPath = `${folderPath}/${stageSubFolder.name}`;
+    } else if (currentPath.length > 0 && selectedWorkflowFolder) {
+      // Regular nested folder path building
+      const pathSegments = [selectedWorkflowFolder.folderPath];
+      let currentItems = selectedWorkflowFolder.files;
       
-      if (currentPath.length > 0 && selectedWorkflowFolder) {
-        const pathSegments = [selectedWorkflowFolder.folderPath];
-        let currentItems = selectedWorkflowFolder.files;
-        
-        for (const pathId of currentPath) {
-          const folderItem = currentItems.find(item => item.id === pathId && item.type === 'folder');
-          if (folderItem) {
-            pathSegments.push(folderItem.name);
-            if (folderItem.subItems) {
-              currentItems = folderItem.subItems;
-            }
+      for (const pathId of currentPath) {
+        const folderItem = currentItems.find(item => item.id === pathId && item.type === 'folder');
+        if (folderItem) {
+          pathSegments.push(folderItem.name);
+          if (folderItem.subItems) {
+            currentItems = folderItem.subItems;
           }
         }
-        
-        folderPath = pathSegments.join('/');
       }
       
-      await handleFolderUpload(items, selectedFolder, parentId, folderPath);
+      folderPath = pathSegments.join('/');
+    }
+
+    if (hasFolders) {
+      console.log('📁 Folder structure detected, processing...');
+      await handleFolderUpload(items, workflowStageId, parentId, folderPath);
     } else if (files.length > 0) {
       console.log('📄 Regular files detected, processing...');
       await handleFileUpload(files, selectedFolder, currentPath, folders);

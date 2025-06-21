@@ -22,9 +22,24 @@ export const useFileUpload = () => {
       fileNames: files.map(f => f.name)
     });
 
+    // Validate that workflowStageId is a valid stage ID (not a UUID)
+    const { data: validStages } = await supabase
+      .from('workflow_stages')
+      .select('id')
+      .eq('id', workflowStageId);
+
+    if (!validStages || validStages.length === 0) {
+      console.error('❌ Invalid workflow stage ID:', workflowStageId);
+      toast.error('Invalid workflow stage selected');
+      throw new Error(`Invalid workflow stage ID: ${workflowStageId}`);
+    }
+
+    console.log('✅ Validated workflow stage ID:', workflowStageId);
+
     const uploadPromises = files.map(async (file, index) => {
-      const fileId = `${Date.now()}-${index}-${file.name}`;
+      const fileId = crypto.randomUUID();
       console.log(`📤 Uploading file ${index + 1}/${files.length}: "${file.name}" with ID: ${fileId}`);
+      console.log(`📤 Using workflow_stage_id: ${workflowStageId}, parent_id: ${parentId}`);
       
       try {
         // Create database record first
@@ -34,7 +49,7 @@ export const useFileUpload = () => {
             id: fileId,
             name: file.name,
             type: 'file',
-            workflow_stage_id: workflowStageId,
+            workflow_stage_id: workflowStageId, // Ensure we use the validated stage ID
             parent_id: parentId,
             file_size: `${(file.size / 1024).toFixed(1)} KB`,
             mime_type: file.type,
@@ -52,6 +67,7 @@ export const useFileUpload = () => {
         }
 
         console.log(`✅ Database record created for "${file.name}":`, dbRecord);
+        console.log(`✅ Confirmed workflow_stage_id in database: ${dbRecord.workflow_stage_id}`);
 
         // Update progress
         setUploadProgress(prev => ({ ...prev, [fileId]: 100 }));

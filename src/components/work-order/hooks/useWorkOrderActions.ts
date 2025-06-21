@@ -32,6 +32,12 @@ export const useWorkOrderActions = () => {
       // Convert FileList to File[] if needed
       const fileArray = Array.isArray(files) ? files : Array.from(files);
       
+      console.log('🔍 Upload context analysis:', {
+        selectedFolder,
+        currentPath,
+        foldersCount: folders.length
+      });
+      
       // Determine the correct workflow stage ID and parent ID
       let workflowStageId = selectedFolder;
       let parentId: string | undefined;
@@ -41,15 +47,29 @@ export const useWorkOrderActions = () => {
         stage.files.filter((item: any) => item.is_stage_subfolder)
       );
       
+      console.log('🔍 All stage sub-folders:', allStageSubFolders.map(sf => ({ id: sf.id, name: sf.name, workflow_stage_id: sf.workflow_stage_id })));
+      
       const stageSubFolder = allStageSubFolders.find(sf => sf.id === selectedFolder);
+      console.log('🔍 Found stage sub-folder match:', stageSubFolder);
       
       if (stageSubFolder) {
         // We're in a stage sub-folder, so use its workflow_stage_id as the main stage
         workflowStageId = stageSubFolder.workflow_stage_id;
         parentId = selectedFolder; // The sub-folder itself is the parent
+        console.log('🔍 Using stage sub-folder context:', { workflowStageId, parentId });
       } else {
-        // Regular workflow stage navigation
-        parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
+        // Check if selectedFolder is a regular workflow stage
+        const workflowStage = folders.find(f => f.id === selectedFolder);
+        if (workflowStage) {
+          // Regular workflow stage navigation
+          workflowStageId = selectedFolder;
+          parentId = currentPath.length > 0 ? currentPath[currentPath.length - 1] : undefined;
+          console.log('🔍 Using workflow stage context:', { workflowStageId, parentId });
+        } else {
+          console.error('❌ Could not determine upload context for selectedFolder:', selectedFolder);
+          toast.error('Invalid folder selection');
+          return;
+        }
       }
       
       // Build folder path
@@ -77,7 +97,7 @@ export const useWorkOrderActions = () => {
         folderPath = pathSegments.join('/');
       }
       
-      console.log('📁 Upload context:', {
+      console.log('📁 Final upload context:', {
         selectedFolder,
         workflowStageId,
         parentId,

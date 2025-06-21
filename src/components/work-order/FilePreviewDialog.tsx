@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,16 @@ import { WorkOrderFile } from './types';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface FilePreviewDialogProps {
   open: boolean;
@@ -17,6 +28,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentFileUrl, setCurrentFileUrl] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const queryClient = useQueryClient();
 
   // Check if file is in OneDrive and get the latest version
@@ -74,6 +86,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
       queryClient.invalidateQueries({ queryKey: ['work-order-items'] });
       toast.success('File record deleted successfully');
       onOpenChange(false);
+      setShowDeleteConfirm(false);
     },
     onError: (error) => {
       console.error('Failed to delete file:', error);
@@ -107,7 +120,7 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   const getFileType = (fileName: string, mimeType?: string): 'image' | 'video' | 'pdf' | 'word' | 'excel' | 'other' => {
     const extension = fileName.split('.').pop()?.toLowerCase();
     
-    if (mimeType?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension || '')) {
+    if (mimeType?.startsWith('image/') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension || '')) {
       return 'image';
     }
     if (mimeType?.startsWith('video/') || ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm'].includes(extension || '')) {
@@ -170,9 +183,11 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   };
 
   const handleDeleteFile = () => {
-    if (confirm(`Are you sure you want to delete the file record for "${file.name}"?`)) {
-      deleteFileMutation.mutate(file.id);
-    }
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    deleteFileMutation.mutate(file.id);
   };
 
   const handleCleanupOrphanedFile = () => {
@@ -241,16 +256,37 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
       );
     }
 
+    if (hasError) {
+      return (
+        <div className="flex items-center justify-center h-[500px] bg-gray-100 rounded-lg">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-2" />
+            <p className="text-gray-600 mb-4">Failed to load preview</p>
+            <Button onClick={refreshPreview} variant="outline">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Retry
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     switch (fileType) {
       case 'image':
         return (
           <div className="flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden h-[500px]">
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            )}
             <img
               src={currentFileUrl!}
               alt={file.name}
               className="max-w-full max-h-full object-contain"
               onLoad={handleLoad}
               onError={handleError}
+              style={{ display: isLoading ? 'none' : 'block' }}
             />
           </div>
         );
@@ -328,72 +364,88 @@ const FilePreviewDialog = ({ open, onOpenChange, file }: FilePreviewDialogProps)
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[800px] max-w-[800px] h-[80vh] max-h-[80vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <DialogTitle className="text-lg font-semibold truncate">
-                  {file.name} {isOrphanedFile && <span className="text-red-500 text-sm">(Upload Failed)</span>}
-                  {oneDriveInfo && <span className="text-blue-500 text-sm">(In OneDrive)</span>}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-gray-500 mt-1">
-                  {(file.file_size || file.size) && `${file.file_size || file.size} • `}Modified {file.modifiedDate}
-                  {isOrphanedFile && <span className="text-red-500 ml-2">• Upload incomplete</span>}
-                  {oneDriveInfo && <span className="text-blue-500 ml-2">• Latest version from OneDrive</span>}
-                </DialogDescription>
-              </div>
-              
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Button onClick={refreshPreview} variant="outline" size="sm">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Refresh
-                </Button>
-                {currentFileUrl && !isOrphanedFile && (
-                  <>
-                    <Button onClick={downloadFile} variant="outline" size="sm">
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
-                    <Button onClick={openInNewTab} variant="outline" size="sm">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Open
-                    </Button>
-                  </>
-                )}
-                {!isOrphanedFile && (
-                  <Button 
-                    onClick={handleDeleteFile} 
-                    variant="destructive" 
-                    size="sm"
-                    disabled={deleteFileMutation.isPending}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[800px] max-w-[800px] h-[80vh] max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <DialogTitle className="text-lg font-semibold truncate">
+                    {file.name} {isOrphanedFile && <span className="text-red-500 text-sm">(Upload Failed)</span>}
+                    {oneDriveInfo && <span className="text-blue-500 text-sm">(In OneDrive)</span>}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-gray-500 mt-1">
+                    {(file.file_size || file.size) && `${file.file_size || file.size} • `}Modified {file.modifiedDate}
+                    {isOrphanedFile && <span className="text-red-500 ml-2">• Upload incomplete</span>}
+                    {oneDriveInfo && <span className="text-blue-500 ml-2">• Latest version from OneDrive</span>}
+                  </DialogDescription>
+                </div>
+                
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button onClick={refreshPreview} variant="outline" size="sm">
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh
                   </Button>
-                )}
-                <Button onClick={() => onOpenChange(false)} variant="ghost" size="sm">
-                  <X className="h-4 w-4" />
-                </Button>
+                  {currentFileUrl && !isOrphanedFile && (
+                    <>
+                      <Button onClick={downloadFile} variant="outline" size="sm">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                      <Button onClick={openInNewTab} variant="outline" size="sm">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Open
+                      </Button>
+                    </>
+                  )}
+                  {!isOrphanedFile && (
+                    <Button 
+                      onClick={handleDeleteFile} 
+                      variant="destructive" 
+                      size="sm"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  )}
+                  <Button onClick={() => onOpenChange(false)} variant="ghost" size="sm">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto">
+            {renderPreview()}
           </div>
-        </DialogHeader>
-        
-        <div className="flex-1 overflow-auto">
-          {isLoading && currentFileUrl && !isOrphanedFile && (
-            <div className="flex items-center justify-center h-[500px] bg-gray-100 rounded-lg">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="text-gray-600">Loading preview...</p>
-              </div>
-            </div>
-          )}
-          {renderPreview()}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent className="bg-gray-800 border-gray-700 text-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete File</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300">
+              Are you sure you want to delete "{file?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-700 text-white border-gray-600 hover:bg-gray-600">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              disabled={deleteFileMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteFileMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { WorkOrderFile, WorkOrderFolder } from './types';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
@@ -19,13 +19,31 @@ const MoveItemDialog = ({ open, onOpenChange, item, folders }: MoveItemDialogPro
   const [selectedStage, setSelectedStage] = useState<string>('');
   const queryClient = useQueryClient();
 
+  // Fetch stage sub-folders
+  const { data: stageSubFolders = [] } = useQuery({
+    queryKey: ['workflow-stage-subfolders-move'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('work_order_items')
+        .select('*')
+        .eq('type', 'folder')
+        .eq('is_stage_subfolder', true)
+        .is('parent_id', null)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open
+  });
+
   const moveItemMutation = useMutation({
-    mutationFn: async ({ itemId, newStageId }: { itemId: string; newStageId: string }) => {
+    mutationFn: async ({ itemId, newStageId, parentId }: { itemId: string; newStageId: string; parentId?: string }) => {
       const { error } = await supabase
         .from('work_order_items')
         .update({ 
           workflow_stage_id: newStageId,
-          parent_id: null // Move to root level of new stage
+          parent_id: parentId || null
         })
         .eq('id', itemId);
 
@@ -48,19 +66,36 @@ const MoveItemDialog = ({ open, onOpenChange, item, folders }: MoveItemDialogPro
 
   const handleMove = () => {
     if (!item || !selectedStage) {
-      toast.error('Please select a workflow stage');
+      toast.error('Please select a destination');
       return;
     }
 
-    moveItemMutation.mutate({
-      itemId: item.id,
-      newStageId: selectedStage
-    });
+    // Check if selectedStage is a stage sub-folder
+    const stageSubFolder = stageSubFolders.find(sf => sf.id === selectedStage);
+    
+    if (stageSubFolder) {
+      // Moving to a stage sub-folder
+      moveItemMutation.mutate({
+        itemId: item.id,
+        newStageId: stageSubFolder.workflow_stage_id,
+        parentId: selectedStage // The sub-folder becomes the parent
+      });
+    } else {
+      // Moving to a regular workflow stage
+      moveItemMutation.mutate({
+        itemId: item.id,
+        newStageId: selectedStage
+      });
+    }
   };
 
   const handleClose = () => {
     onOpenChange(false);
     setSelectedStage('');
+  };
+
+  const getStageSubFoldersForStage = (stageId: string) => {
+    return stageSubFolders.filter(folder => folder.workflow_stage_id === stageId);
   };
 
   return (
@@ -75,22 +110,39 @@ const MoveItemDialog = ({ open, onOpenChange, item, folders }: MoveItemDialogPro
           </p>
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300">
-              Select Workflow Stage
+              Select Destination
             </label>
             <Select value={selectedStage} onValueChange={setSelectedStage}>
               <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                <SelectValue placeholder="Choose a workflow stage" />
+                <SelectValue placeholder="Choose a workflow stage or sub-stage" />
               </SelectTrigger>
               <SelectContent className="bg-gray-700 border-gray-600">
-                {folders.map((folder) => (
-                  <SelectItem 
-                    key={folder.id} 
-                    value={folder.id}
-                    className="text-white hover:bg-gray-600"
-                  >
-                    {folder.name}
-                  </SelectItem>
-                ))}
+                {folders.map((folder) => {
+                  const stageSubFolders = getStageSubFoldersForStage(folder.id);
+                  
+                  return (
+                    <React.Fragment key={folder.id}>
+                      {/* Main workflow stage */}
+                      <SelectItem 
+                        value={folder.id}
+                        className="text-white hover:bg-gray-600"
+                      >
+                        {folder.name}
+                      </SelectItem>
+                      
+                      {/* Stage sub-folders */}
+                      {stageSubFolders.map((subFolder) => (
+                        <SelectItem
+                          key={subFolder.id}
+                          value={subFolder.id}
+                          className="text-white hover:bg-gray-600 pl-6"
+                        >
+                          ↳ {subFolder.name}
+                        </SelectItem>
+                      ))}
+                    </React.Fragment>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

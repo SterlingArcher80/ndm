@@ -52,16 +52,35 @@ const WorkOrderSidebar = ({
     }
   });
 
-  // Calculate folder counts for each workflow stage (excluding stage sub-folders)
+  // Calculate folder counts for each workflow stage and sub-stage
   const folderCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     
     folders.forEach(folder => {
+      // Count regular folders (not stage sub-folders) for the main workflow stage
       const regularFolders = folder.files.filter(file => 
         file.type === 'folder' && 
         !stageSubFolders.some(sf => sf.id === file.id)
       );
-      counts[folder.id] = regularFolders.length;
+      
+      // Get stage sub-folders for this workflow stage
+      const stageSubFoldersForStage = stageSubFolders.filter(sf => sf.workflow_stage_id === folder.id);
+      
+      if (stageSubFoldersForStage.length > 0) {
+        // If there are sub-stages, don't show count on the main stage
+        counts[folder.id] = 0;
+        
+        // Calculate counts for each sub-stage
+        stageSubFoldersForStage.forEach(subFolder => {
+          const subFolderItems = folder.files.filter(file => 
+            file.parent_id === subFolder.id && file.type === 'folder'
+          );
+          counts[subFolder.id] = subFolderItems.length;
+        });
+      } else {
+        // No sub-stages, show count on the main stage
+        counts[folder.id] = regularFolders.length;
+      }
     });
     
     return counts;
@@ -161,34 +180,50 @@ const WorkOrderSidebar = ({
                     <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     <div className="flex-1">
                       <div className="font-medium text-gray-900 dark:text-white">{folder.name}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">{folderCount} folders</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {hasSubFolders ? `${stageSubFolders.length} sub-stages` : `${folderCount} folders`}
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-300">
-                      {folderCount}
-                    </Badge>
+                    {!hasSubFolders && (
+                      <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-300">
+                        {folderCount}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
-                {/* Stage sub-folders (nested) */}
+                {/* Stage sub-folders (nested with more indentation) */}
                 {hasSubFolders && isExpanded && (
-                  <div className="ml-6 space-y-1">
-                    {stageSubFolders.map((subFolder) => (
-                      <div
-                        key={subFolder.id}
-                        className={`flex items-center p-2 rounded-lg cursor-pointer transition-all duration-200 ${
-                          currentPath.length > 1 && currentPath[1] === subFolder.id
-                            ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400'
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                        }`}
-                        onClick={() => handleStageSubFolderClick(subFolder)}
-                        title={`Stage sub-folder: ${subFolder.name}`}
-                      >
-                        <Folder className="h-4 w-4 text-blue-500 mr-2" />
-                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                          {subFolder.name}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="ml-8 space-y-1">
+                    {stageSubFolders.map((subFolder) => {
+                      const subFolderCount = folderCounts[subFolder.id] || 0;
+                      
+                      return (
+                        <div
+                          key={subFolder.id}
+                          className={`flex items-center p-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                            currentPath.length > 1 && currentPath[1] === subFolder.id
+                              ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-400'
+                              : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                          }`}
+                          onClick={() => handleStageSubFolderClick(subFolder)}
+                          title={`Stage sub-folder: ${subFolder.name}`}
+                        >
+                          <Folder className="h-4 w-4 text-blue-500 mr-2" />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                              {subFolder.name}
+                            </span>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              {subFolderCount} folders
+                            </div>
+                          </div>
+                          <Badge variant="secondary" className="bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-300 text-xs">
+                            {subFolderCount}
+                          </Badge>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

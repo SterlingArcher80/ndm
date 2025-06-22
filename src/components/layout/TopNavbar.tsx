@@ -16,7 +16,7 @@ const TopNavbar = () => {
   const location = useLocation();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6">
+    <header className="flex h-16 items-center justify-between border-b border-border bg-background px-6 default:bg-gradient-to-r default:from-blue-600 default:to-teal-600">
       <div className="flex items-center gap-4">
         <SidebarTrigger />
         {/* Page title removed as requested */}
@@ -30,8 +30,8 @@ const TopNavbar = () => {
                 variant={isActive ? "default" : "ghost"}
                 className={`flex items-center gap-2 ${
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                    ? "bg-primary text-primary-foreground default:bg-white/20 default:text-white default:hover:bg-white/30"
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground default:text-white/90 default:hover:bg-white/10 default:hover:text-white"
                 }`}
               >
                 <Icon className="h-5 w-5" />
@@ -42,7 +42,7 @@ const TopNavbar = () => {
         })}
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" className="default:text-white/90 default:hover:bg-white/10 default:hover:text-white">
           <svg
             className="h-5 w-5"
             fill="none"
